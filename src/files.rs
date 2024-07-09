@@ -4,10 +4,11 @@
 //!
 
 use anyhow::Result;
+use ignore::WalkBuilder;
 use serde_json::json;
 use std::fs;
 use std::path::Path;
-use ignore::WalkBuilder;
+use termtree::Tree;
 
 /// Parses a comma-delimited list from the user arguments.
 ///
@@ -61,4 +62,29 @@ pub fn traverse_directory(
     let mut files = Vec::new();
     let canonical_root_path = root.canonicalize()?;
     // TODO
+}
+
+/// Whether to include a file based on the include/exclude patterns.
+///
+/// ### Arguments
+///
+/// - `path`: The path to the file to check.
+/// - `include_patterns`: The include patterns.
+/// - `exclude_patterns`: The exclude patterns.
+/// - `include_priority`: Whether to put precedence on the include or exclude patterns if they
+/// conflict.
+///
+/// ### Returns
+///
+/// - `bool`: True if the file should be included, False otherwise.
+///
+fn include(path: &Path, include: &[String], exclude: &[String], include_priority: bool) -> bool {
+    let canonical_root_path = match fs::canonicalize(path) {
+        Ok(path) => path,
+        Err(e) => {
+            println!("Failed to canonicalize path: {}", e);
+            return false;
+        }
+    };
+    let path_string = canonical_root_path.to_str().unwrap();
 }
