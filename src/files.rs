@@ -4,6 +4,7 @@
 //!
 
 use anyhow::Result;
+use glob::Pattern;
 use ignore::WalkBuilder;
 use serde_json::json;
 use std::fs;
@@ -60,8 +61,114 @@ pub fn traverse_directory(
 ) -> Result<(String, Vec<serde_json::Value>)> {
     // Will hold the files found in the traversal.
     let mut files = Vec::new();
+    // Canonicalize returns the canonical, absolute form of a path with all intermediate components
+    // normalized and symbolic links resolved. It errors if the path does not exist or if the final
+    // component in path is not a directory.
     let canonical_root_path = root.canonicalize()?;
-    // TODO
+    let parent_dir = basename(&canonical_root_path);
+
+    // Walk through the directory tree.
+    // Initialize a WalkBuilder with the canonical root path (by default, respects .gitignore).
+    let tree = WalkBuilder::new(&canonical_root_path)
+        .build()
+        // Filter out errors, only keep successful entries.
+        .filter_map(|e| e.ok())
+        // Use fold to accumulate entries into the tree structure, starting from the root
+        // directory.
+        .fold(Tree::new(parent_dir.to_owned()), |mut root, entry| {
+            let path = entry.path();
+            // Computes the relative path from the root directory.
+            if let Ok(relative_path) = path.strip_prefix(&canonical_root_path) {
+                // Initialize the current tree to the root of the tree.
+                let mut current_tree = &mut root;
+                // Iterate over each part of the relative path.
+                for component in relative_path.components() {
+                    let component_string = component.as_os_str().to_string_lossy().to_string();
+                    // Check if the file should be excluded from the tree based on the
+                    // exclude patterns and exclude_from_tree arguments. Break the path component
+                    // loop if it any part of the path should be excluded.
+                    if exclude_from_tree && !include_file(path, include, exclude, include_priority)
+                    {
+                        break;
+                    }
+
+                    // Check if the current component already exists in the current tree.
+                    current_tree = if let Some(index) = current_tree
+                        .leaves
+                        .iter_mut()
+                        .position(|child| child.root == component_string)
+                    {
+                        // Update the current tree to point to the existing component.
+                        &mut current_tree.leaves[index]
+                    // Component doesn't already exist, create a new tree node and add to the
+                    // current tree.
+                    } else {
+                        let new_tree = Tree::new(component_string.clone());
+                        current_tree.leaves.push(new_tree);
+                        current_tree.leaves.last_mut().unwrap()
+                    };
+                }
+
+                if path.is_file() && include_file(path, include, exclude, include_priority) {
+                    // Read in the file contents into bytes.
+                    if let Ok(file_bytes) = fs::read(path) {
+                        let code_string = String::from_utf8_lossy(&file_bytes);
+                        // Get the formatted content block.
+                        let formatted_block = wrap_content(
+                            &code_string,
+                            path.extension().and_then(|ext| ext.to_str()).unwrap_or(""),
+                            line_numbers,
+                            no_codeblock,
+                        );
+
+                        if !formatted_block.trim().is_empty() && !formatted_block.contains(char::REPLACEMENT_CHARACTER) {
+                            // TODO 
+                        }
+                    }
+                }
+            }
+        });
+}
+
+/// Gets the basename of the filepath.
+///
+/// ### Arguments
+///
+/// - `p`: The file/directory path to process.
+///
+/// ### Returns
+///
+/// - `String`: The path basename.
+///
+pub fn basename<P>(p: P) -> String
+where
+    P: AsRef<Path>,
+{
+    let path = p.as_ref();
+    match path.file_name() {
+        Some(name) => name.to_string_lossy().into_owned(),
+        None => handle_special_case(path),
+    }
+}
+
+/// Handles the special cases for the basename function.
+///
+/// ### Arguments
+///
+/// - `p`: The special case path to process.
+///
+/// ### Returns
+/// - `String`:
+///
+fn handle_special_case(p: &Path) -> String {
+    if p.as_os_str().is_empty() || p == Path::new(".") || p == Path::new("..") {
+        std::env::current_dir()
+            .ok()
+            .and_then(|d| d.file_name().map(|n| n.to_string_lossy().into_owned()))
+            .unwrap_or_else(|| ".".to_owned())
+    } else {
+        p.to_string_lossy().into_owned()
+    }
 }
 
 /// Whether to include a file based on the include/exclude patterns.
@@ -78,7 +185,12 @@ pub fn traverse_directory(
 ///
 /// - `bool`: True if the file should be included, False otherwise.
 ///
-fn include(path: &Path, include: &[String], exclude: &[String], include_priority: bool) -> bool {
+fn include_file(
+    path: &Path,
+    include: &[String],
+    exclude: &[String],
+    include_priority: bool,
+) -> bool {
     let canonical_root_path = match fs::canonicalize(path) {
         Ok(path) => path,
         Err(e) => {
@@ -87,4 +199,57 @@ fn include(path: &Path, include: &[String], exclude: &[String], include_priority
         }
     };
     let path_string = canonical_root_path.to_str().unwrap();
+
+    // Check the glob patterns.
+    let include_bool = include
+        .iter()
+        .any(|pattern| Pattern::new(pattern).unwrap().matches(path_string));
+    let exclude_bool = exclude
+        .iter()
+        .any(|pattern| Pattern::new(pattern).unwrap().matches(path_string));
+
+    // Determine if the file should be included.
+    let result = match (include_bool, exclude_bool) {
+        (true, true) => include_priority,
+        (true, false) => true,
+        (false, true) => false,
+        (false, false) => include.is_empty(),
+    };
+
+    result
+}
+
+/// Wrap the file code content into a markdown code block and add line numbers if applicable.
+///
+/// ### Arguments
+///
+/// - `content`: The content to wrap.
+/// - `extension`: The file extension.
+/// - `line_numbers`: Whether to add line numbers.
+/// - `no_codeblock`: Whether to wrap the file content or not.
+///
+/// ### Returns
+///
+/// - `String`: The formatted file content.
+///
+fn wrap_content(content: &str, extension: &str, line_numbers: bool, no_codeblock: bool) -> String {
+    let codeblock_tick = "`".repeat(3);
+    let mut formatted_block = String::new();
+
+    if line_numbers {
+        for (idx, line) in content.lines().enumerate() {
+            formatted_block.push_str(&format!("{:4} | {}\n", idx + 1, line));
+        }
+    } else {
+        formatted_block = content.to_owned();
+    }
+
+    if no_codeblock {
+        formatted_block
+    } else {
+        format!(
+            "{}{}\n{}\n{}",
+            codeblock_tick, extension, formatted_block, codeblock_tick
+        )
+    }
 }
