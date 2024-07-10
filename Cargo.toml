@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.86"
 clap = { version = "4.5.8", features = ["derive"] }
+glob = "0.3.1"
 handlebars = "5.1.2"
 ignore = "0.4.22"
 indicatif = "0.17.8"
