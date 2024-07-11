@@ -5,10 +5,9 @@
 //! writing the output to a file.
 //!
 //! Right now does not support user-defined variables but this is planned in the future.
-//!
 
 use super::constants::{CUSTOM_TEMPLATE_NAME, DEFAULT_TEMPLATE_NAME};
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use handlebars::{no_escape, Handlebars};
 use std::path::PathBuf;
 
@@ -72,4 +71,27 @@ pub fn get_template<'a>(path: &'a Option<PathBuf>) -> Result<(String, &'a str)> 
             DEFAULT_TEMPLATE_NAME,
         ))
     }
+}
+
+/// Renders the handlebars template.
+///
+/// ### Arguments
+///
+/// - `registry`: The handlebars registry.
+/// - `template_name`: The handlebars template name.
+/// - `json_data`: The formatted JSON data.
+///
+/// ### Returns
+///
+/// - `Result<String>`:
+///
+pub fn render_template(
+    registry: &Handlebars,
+    template_name: &str,
+    json_data: &serde_json::Value,
+) -> Result<String> {
+    let rendered_output = registry
+        .render(template_name, json_data)
+        .map_err(|e| anyhow!("Failed to render template: {}", e))?;
+    Ok(rendered_output.trim().to_owned())
 }
