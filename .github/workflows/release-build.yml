@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  release:
+    name: Release - ${{ matrix.platform.release_for }}
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      matrix:
+        platform:
+          - release_for: Linux-x86_64
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - release_for: macOS-x86_64
+            os: macos-latest
+            target: x86_64-apple-darwin
+          - release_for: Windows-x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        target: ${{ matrix.platform.target }}
+        override: true
+    - name: Build
+      run: cargo build --verbose --release --target ${{ matrix.platform.target }}
+    - name: Rename binary
+      run: |
+        cd target/${{ matrix.platform.target }}/release
+        mv your_binary_name${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }} your_binary_name-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
+    - name: Upload Release Asset (Binary)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./target/${{ matrix.platform.target }}/release/your_binary_name-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
+        asset_name: your_binary_name-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
+        asset_content_type: application/octet-stream
+    
+    - name: Compress templates directory
+      run: zip -r templates.zip src/templates
+    
+    - name: Upload Release Asset (Templates)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./templates.zip
+        asset_name: templates.zip
+        asset_content_type: application/zip
