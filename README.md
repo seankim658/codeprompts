@@ -18,33 +18,33 @@ This was a project to brush up on Rust and is essentially just my own rip of [co
 
 Manually copy and pasting code and code snippets to LLMs has several issues:
 
-1. **You lose formatting and structure**. For a language like Python that uses whitespace, the formatting and structure of the code is important for the LLM to accurately and comprehensively understand the code for your request. 
-2. **You lose context**. In order for the LLM to provide the best responses, it requires the context from all of your code. This includes your code snippet's dependencies, other user defined modules/objects, and other scope variables and concepts.  
-3. **You lose prompt standardization**: If you are using LLMs to perform repeated tasks like documenting code, you have to make sure that your documentation styling guidelines are consistent across every request. 
+1. **You lose formatting and structure**. For a language like Python that uses whitespace, the formatting and structure of the code is important for the LLM to accurately and comprehensively understand the code for your request.
+2. **You lose context**. In order for the LLM to provide the best responses, it requires the context from all of your code. This includes your code snippet's dependencies, other user defined modules/objects, and other scope variables and concepts.
+3. **You lose prompt standardization**: If you are using LLMs to perform repeated tasks like documenting code, you have to make sure that your documentation styling guidelines are consistent across every request.
 
-To get the most out of LLMs, prompting has to be clear, comprehensive, and consistent. How code prompts fixes these issues: 
+To get the most out of LLMs, prompting has to be clear, comprehensive, and consistent. How code prompts fixes these issues:
 
-1) Code prompts will ensure the inherent structure of your code is retained to limit any possible misinterpretation or inferrence required from the LLM. 
-2) The complete context required for understanding the code is enclosed in a standardized format. This includes the project directory tree and file pathing.
-3) By using Handlebar templates, the prompts will be comprehensive and consistent. If your preferred style guide and/or coding practices are updated in the future, there is no need to remember to update all future manually typed prompts. Instead, just update the target Handlebars template once.
+1. Code prompts will ensure the inherent structure of your code is retained to limit any possible misinterpretation or inferrence required from the LLM.
+2. The complete context required for understanding the code is enclosed in a standardized format. This includes the project directory tree and file pathing.
+3. By using Handlebar templates, the prompts will be comprehensive and consistent. If your preferred style guide and/or coding practices are updated in the future, there is no need to remember to update all future manually typed prompts. Instead, just update the target Handlebars template once.
 
 ## Installation
 
 ### Release Binary
 
-To download a release binary, TODO 
+To download a release binary, TODO
 
 ### Building From Source
 
 To build from source you will need to have [git](https://git-scm.com/downloads), [Rust](https://doc.rust-lang.org/book/ch01-01-installation.html), and Cargo (will be installed with Rust) installed.
 
-First clone the repository: 
+First clone the repository:
 
 ```bash
 git clone git@github.com:seankim658/codeprompts.git
 ```
 
-And then compile a release binary: 
+And then compile a release binary:
 
 ```bash
 cd codeprompts/
@@ -57,7 +57,7 @@ cargo build --release
 
 The code prompts command line tool has the following arguments:
 
-```bash
+```shell
 Usage: codeprompt [OPTIONS] <PATH>
 
 Arguments:
@@ -118,4 +118,15 @@ Options:
           Print version
 ```
 
-## Templates 
+## Templates
+
+The templates use a simple templating language called [Handlebars](https://handlebarsjs.com/guide/). For this project, the Handlebars templates are used to generate markdown. 
+
+The pre-defined templates can be downloaded from the project releases TODO. 
+
+Currently, the included pre-defined templates are:
+
+| Template Name                                                              | Description                                                                                                                                                                |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`default_template.hbs`](./src/templates/default_template.hbs)             | This is a simple default template that will structure your project path, source tree, and code blocks.                                                                     |
+| [`documentation_template.hbs`](./src/templates/documentation_template.hbs) | The documentation template creates a prompt for documenting code. The documentation guidelines are consistent with the HIVE lab guidelines and documentation requirements. |
