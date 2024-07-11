@@ -1,0 +1,32 @@
+Project Path: {{ absolute_code_path }}
+
+Source Tree:
+
+```
+{{ source_tree }}
+```
+
+{{#each files}}
+{{#if code}}
+`{{path}}`:
+
+{{code}}
+
+{{/if}}
+{{/each}}
+
+Please help me with adding documentation to this code or improving my existing documentation. Things to focus on:
+
+1. Clarity, the documentation should be clear to the reader.
+2. Concise, the documentation should not be overly verbose, it should be clear while not polluting the code.
+3. Value, the documentation should add value to the code. If the code is already clear, for example, a simple conditional is likely to be self-documenting so documentation shouldn't be required for that. However, anything at a higher level of complexity that is not immediately obvious reading the code should have documentation that adds value to the clarity of the code.
+
+Documentation style guide and guidelines to follow:
+
+1. Functions and Methods - Our documentation style guide requires that all functions and methods have docstrings. The docstring should have a short description of the function/method's functionality, list out the parameters it takes with their types, type constraints (to the best of your knowledge) and descriptions, list out the return value (including its purpose and typing), and also note any potential exceptions/errors the function/method might raise.
+2. Classes and Objects - Classes and objects should have docstrings that describe the class or object, what public attributes it has, and any potential inheritance or superclass.
+3. Variables - Unless the variable already has a name that clearly describes its purpose, variables should have a short note that will help the code reviewer.
+
+Comments should use the style for their language (i.e. Python docstrings use """, Rust docstrings use ///, Typescript and Javascript use /** */, and so on). Any potential variable comments should be placed directly above the variable and any docstring comments should be placed right below the class/function/method definition. 
+
+Also note if you see any existing documentation that seems to be potentially conflicting or contradictory to the code it describes. Let me know if you have any questions and please review your work before finishing.
