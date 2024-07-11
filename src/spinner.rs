@@ -1,7 +1,6 @@
 //! # Spinner Module
 //!
 //! Module that handles the spinner (progress indicator).
-//!
 
 use super::constants::PROGRESS_SPINNER_TICK;
 use indicatif::{ProgressBar, ProgressStyle};
