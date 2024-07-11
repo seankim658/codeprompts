@@ -36,7 +36,7 @@ struct Args {
     #[arg(long, action(ArgAction::SetFalse))]
     tokens: bool,
 
-    /// Tokenizer to use for token count. Defaults to cl100k.
+    /// Tokenizer to use for token count.
     ///
     /// Right now cl100k is the only supported tokenizer.
     #[arg(short = 'c', long, default_value = "cl100k")]
