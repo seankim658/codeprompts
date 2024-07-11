@@ -66,10 +66,14 @@ jobs:
         asset_path: ./target/${{ matrix.platform.target }}/release/codeprompt-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
         asset_name: codeprompt-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
         asset_content_type: application/octet-stream
-    
+        
+  upload-templates:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
     - name: Compress templates directory
       run: zip -r templates.zip src/templates
-    
     - name: Upload Release Asset (Templates)
       uses: actions/upload-release-asset@v1
       env:
