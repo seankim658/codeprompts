@@ -32,7 +32,7 @@ To get the most out of LLMs, prompting has to be clear, comprehensive, and consi
 
 ### Release Binary
 
-To download a release binary, TODO
+To download a release binary, go to the [releases](https://github.com/seankim658/codeprompts/releases) and download the binary for your OS.
 
 ### Building From Source
 
@@ -57,7 +57,7 @@ cargo build --release
 
 The code prompts command line tool has the following arguments:
 
-```shell
+```txt
 Usage: codeprompt [OPTIONS] <PATH>
 
 Arguments:
@@ -72,44 +72,44 @@ Options:
           Glob patterns to exclude
 
       --include-priority
-          Pattern priority in case of conflict (True to prioritize Include pattern, False to prioritize exclude pattern). Defaults to True.
+          Pattern priority in case of conflict (True to prioritize Include pattern, False to prioritize exclude pattern). Defaults to True
 
       --exclude-from-tree
-          Whether to exclude files/folders from the source tree based on exclude patterns. Defaults to False.
+          Whether to exclude files/folders from the source tree based on exclude patterns. Defaults to False
 
       --tokens
-          Display approximate token count of the genrated prompt. Defaults to True.
+          Display approximate token count of the genrated prompt. Defaults to True
 
   -c, --encoding <ENCODING>
-          Tokenizer to use for token count. Defaults to cl100k.
+          Tokenizer to use for token count.
 
           Right now cl100k is the only supported tokenizer.
 
           [default: cl100k]
 
   -o, --output <OUTPUT>
-          Redirect output to file.
+          Redirect output to file
 
   -l, --line-numbers
-          Toggle line numbers to source code. Defaults to True.
+          Toggle line numbers to source code. Defaults to True
 
       --no-codeblock
-          Disable wrapping code inside markdown code blocks. Defaults to False.
+          Disable wrapping code inside markdown code blocks. Defaults to False
 
       --relative-paths
-          Use relative paths instead of absolute paths, including parent directory. Defaults to True.
+          Use relative paths instead of absolute paths, including parent directory. Defaults to True
 
       --no-clipboard
-          Disable copying to clipboard. Defaults to False.
+          Disable copying to clipboard. Defaults to False
 
   -t, --template <TEMPLATE>
           Optional path to Handlebars template
 
       --spinner
-          Whether to render the spinner (incurs some overhead but is nice to look at). Defaults to True.
+          Whether to render the spinner (incurs some overhead but is nice to look at). Defaults to True
 
       --json
-          Whether to print the output as JSON. Defaults to False.
+          Whether to print the output as JSON. Defaults to False
 
   -h, --help
           Print help (see a summary with '-h')
@@ -122,7 +122,7 @@ Options:
 
 The templates use a simple templating language called [Handlebars](https://handlebarsjs.com/guide/). For this project, the Handlebars templates are used to generate markdown. 
 
-The pre-defined templates can be downloaded from the project releases TODO. 
+The pre-defined templates can be downloaded from the project [releases](https://github.com/seankim658/codeprompts/releases). Download the `templates.zip`.
 
 Currently, the included pre-defined templates are:
 
