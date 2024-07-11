@@ -1,11 +1,14 @@
-use anyhow::{Context, Result};
-use clap::Parser;
+use anyhow::{Context, Error, Result};
+use arboard::Clipboard;
+use clap::{Parser, ArgAction};
 use codeprompt::prelude::*;
-use std::error::Error;
+use colored::*;
+use serde_json::json;
+use std::io::Write;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
-#[clap(name = "codeprompt", version = "0.1.0", author = "seankim658")]
+#[clap(name = "codeprompt", version = "0.1.0")]
 struct Args {
     /// Path to project directory.
     #[arg()]
@@ -21,16 +24,16 @@ struct Args {
 
     /// Pattern priority in case of conflict (True to prioritize Include pattern, False to
     /// prioritize exclude pattern). Defaults to True.
-    #[arg(long, default_value_t = true)]
+    #[arg(long, action(ArgAction::SetFalse))]
     include_priority: bool,
 
     /// Whether to exclude files/folders from the source tree based on exclude patterns. Defaults
     /// to False.
-    #[arg(long, default_value_t = false)]
+    #[arg(long, action(ArgAction::SetTrue))]
     exclude_from_tree: bool,
 
-    /// Display approximate token count of the genrated prompt.
-    #[arg(long, default_value_t = false)]
+    /// Display approximate token count of the genrated prompt. Defaults to True.
+    #[arg(long, action(ArgAction::SetFalse))]
     tokens: bool,
 
     /// Tokenizer to use for token count. Defaults to cl100k.
@@ -44,69 +47,180 @@ struct Args {
     output: Option<String>,
 
     /// Toggle line numbers to source code. Defaults to True.
-    #[arg(short = 'l', long, default_value_t = true)]
+    #[arg(short = 'l', long, action(ArgAction::SetFalse))]
     line_numbers: bool,
 
     /// Disable wrapping code inside markdown code blocks. Defaults to False.
-    #[arg(long, default_value_t = false)]
+    #[arg(long, action(ArgAction::SetTrue))]
     no_codeblock: bool,
 
     /// Use relative paths instead of absolute paths, including parent directory. Defaults to True.
-    #[arg(long, default_value_t = true)]
+    #[arg(long, action(ArgAction::SetFalse))]
     relative_paths: bool,
 
     /// Disable copying to clipboard. Defaults to False.
-    #[arg(long, default_value_t = false)]
+    #[arg(long, action(ArgAction::SetTrue))]
     no_clipboard: bool,
 
     /// Optional path to Handlebars template.
-    #[arg(short = 'p', long)]
+    #[arg(short = 't', long)]
     template: Option<PathBuf>,
 
     /// Whether to render the spinner (incurs some overhead but is nice to look at). Defaults to
     /// True.
-    #[arg(long, default_value_t = true)]
+    #[arg(long, action(ArgAction::SetFalse))]
     spinner: bool,
+
+    /// Whether to print the output as JSON. Defaults to False.
+    #[arg(long, action(ArgAction::SetTrue))]
+    json: bool,
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<(), Error> {
     let args = Args::parse();
 
-    // Get the template to use.
     let (template, template_name) = get_template(&args.template)?;
-    // Setup the Handlebars registry.
     let handlebars = setup_handlebars_registry(&template, template_name)?;
 
-    if args.spinner {
-        let spinner = setup_spinner("Building directory tree...");
-    }
+    let spinner = if args.spinner {
+        Some(setup_spinner("Building directory tree..."))
+    } else {
+        None
+    };
 
     let include_patterns = parse_comma_delim_patterns(&args.include);
     let exclude_patterns = parse_comma_delim_patterns(&args.exclude);
 
-    // TODO : delete printing
-    // println!("Path: {:?}", args.path);
-    // println!(
-    //     "Include: {}",
-    //     args.include.unwrap_or("No include.".to_string())
-    // );
-    // println!(
-    //     "Exclude: {}",
-    //     args.exclude.unwrap_or("No exclude.".to_string())
-    // );
-    // println!("Include priority: {}", args.include_priority);
-    // println!("Exclude from tree: {}", args.exclude_from_tree);
-    // println!("Tokens: {}", args.tokens);
-    // println!("Token encoder: {}", args.encoding);
-    // println!(
-    //     "Output: {}",
-    //     args.output.unwrap_or("No output.".to_string())
-    // );
-    // println!("Line numbers: {}", args.line_numbers);
-    // println!("No codeblock: {}", args.no_codeblock);
-    // println!("Relative paths: {}", args.relative_paths);
-    // println!("No clipboard: {}", args.no_clipboard);
-    // println!("Template path: {:?}", args.template);
+    let tree_data = traverse_directory(
+        &args.path,
+        &include_patterns,
+        &exclude_patterns,
+        args.include_priority,
+        args.line_numbers,
+        args.relative_paths,
+        args.exclude_from_tree,
+        args.no_codeblock,
+    );
 
+    let (tree, files) = match tree_data {
+        Ok(result) => result,
+        Err(e) => {
+            if let Some(s) = &spinner {
+                s.finish_with_message("Failed!".red().to_string());
+            }
+            eprint!(
+                "{}{}{} {}",
+                "[".bold().white(),
+                "!".bold().red(),
+                "]".bold().white(),
+                format!("Failed to traverse directories: {}", e).red()
+            );
+            std::process::exit(1);
+        }
+    };
+
+    if let Some(s) = &spinner {
+        s.finish_with_message("Done!".green().to_string());
+    }
+
+    let json_data = json!({
+        "absolute_code_path": basename(&args.path),
+        "source_tree": tree,
+        "files": files,
+    });
+
+    let rendered_output = render_template(&handlebars, template_name, &json_data)?;
+
+    let tokens = if args.tokens {
+        let bpe = tokenizer_init(&args.encoding);
+        bpe.encode_with_special_tokens(&rendered_output).len()
+    } else {
+        0
+    };
+
+    let paths: Vec<String> = files
+        .iter()
+        .filter_map(|f| f.get("path").and_then(|p| p.as_str()).map(|s| s.to_owned()))
+        .collect();
+
+    if args.json {
+        let json_output = json!({
+            "prompt": rendered_output,
+            "directory_name": basename(&args.path),
+            "token_count": tokens,
+            "files": paths,
+        });
+        println!("{}", serde_json::to_string_pretty(&json_output)?);
+        return Ok(());
+    } else {
+        if args.tokens {
+            println!(
+                "{}{}{} Token count: {}",
+                "[".bold().white(),
+                "i".bold().blue(),
+                "]".bold().white(),
+                tokens.to_string().bold().yellow()
+            );
+        }
+    }
+
+    if !args.no_clipboard {
+        copy_to_clipboard(&rendered_output)?;
+    }
+
+    if let Some(output_path) = &args.output {
+        write_output_file(output_path, &rendered_output)?;
+    }
+
+    Ok(())
+}
+
+/// Copies the output to the system clipboard.
+///
+/// ### Arguments
+///
+/// - `content`: The content to copy to the clipboard.
+///
+/// ### Returns
+///
+/// - `Result<(), anyhow::Error>`: Unit tuple on success or an anyhow error.
+///
+fn copy_to_clipboard(content: &str) -> Result<(), Error> {
+    let mut clipboard = Clipboard::new().expect("Failed to initialize clipboard.");
+    clipboard
+        .set_text(content.to_owned())
+        .context("Failed to copy output to clipboard.")?;
+    println!(
+        "{}{}{} {}",
+        "[".bold().white(),
+        "✓".bold().green(),
+        "]".bold().white(),
+        "Prompt successfully copied to clipboard!".green()
+    );
+    Ok(())
+}
+
+/// Writes the output to an output file.
+///
+/// ### Arguments
+///
+/// - `path`: The path to the output file.
+/// - `content`: The content to write to the output file.
+///
+/// ### Returns
+///
+/// - `Result<(), anyhow::Error>`: Unit tuple on success or an anyhow error.
+///
+fn write_output_file(path: &str, content: &str) -> Result<(), Error> {
+    let file = std::fs::File::create(path)?;
+    let mut writer = std::io::BufWriter::new(file);
+    write!(writer, "{}", content)?;
+    println!(
+        "{}{}{} {}",
+        "[".bold().white(),
+        "✓".bold().green(),
+        "]".bold().white(),
+        format!("Prompt successfully written to file: {}", path).green()
+    );
     Ok(())
 }
