@@ -34,15 +34,15 @@ jobs:
     - name: Rename binary
       run: |
         cd target/${{ matrix.platform.target }}/release
-        mv your_binary_name${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }} your_binary_name-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
+        mv codeprompt${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }} codeprompt-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
     - name: Upload Release Asset (Binary)
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./target/${{ matrix.platform.target }}/release/your_binary_name-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
-        asset_name: your_binary_name-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
+        asset_path: ./target/${{ matrix.platform.target }}/release/codeprompt-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
+        asset_name: codeprompt-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
         asset_content_type: application/octet-stream
     
     - name: Compress templates directory
