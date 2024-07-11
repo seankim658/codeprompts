@@ -1,7 +1,6 @@
 //! Files Module
 //!
 //! Module that handles all file and file pathing functionality.
-//!
 
 use anyhow::Result;
 use glob::Pattern;
@@ -121,13 +120,29 @@ pub fn traverse_directory(
                             no_codeblock,
                         );
 
-                        if !formatted_block.trim().is_empty() && !formatted_block.contains(char::REPLACEMENT_CHARACTER) {
-                            // TODO 
+                        if !formatted_block.trim().is_empty()
+                            && !formatted_block.contains(char::REPLACEMENT_CHARACTER)
+                        {
+                            // If the relative paths bool is True, get the relative path.
+                            let file_path = if relative_paths {
+                                format!("{}/{}", parent_dir, relative_path.display())
+                            // If the relative paths bool is False, get the full path.
+                            } else {
+                                path.display().to_string()
+                            };
+
+                            files.push(json!({
+                                "path": file_path,
+                                "extension": path.extension().and_then(|ext| ext.to_str()).unwrap_or(""),
+                                "code": formatted_block
+                            }));
                         }
                     }
                 }
             }
+            root
         });
+    Ok((tree.to_string(), files))
 }
 
 /// Gets the basename of the filepath.
