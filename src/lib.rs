@@ -7,13 +7,15 @@ pub mod constants {
     pub const PROGRESS_SPINNER_TICK: u64 = 120;
 }
 
-pub mod template;
-pub mod spinner;
 pub mod files;
+pub mod spinner;
+pub mod template;
+pub mod tokenizer;
 
 pub mod prelude {
     //! Easy import prelude module.
-    pub use crate::template::{setup_handlebars_registry, get_template};
-    pub use crate::spinner::{setup_spinner};
-    pub use crate::files::{parse_comma_delim_patterns};
+    pub use crate::files::{basename, parse_comma_delim_patterns, traverse_directory};
+    pub use crate::spinner::setup_spinner;
+    pub use crate::template::{get_template, render_template, setup_handlebars_registry};
+    pub use crate::tokenizer::tokenizer_init;
 }
