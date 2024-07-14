@@ -1,6 +1,6 @@
 # Code Prompts
 
-Command line tool for creating LLM prompts from your code using [Handlebars](https://handlebarsjs.com/) templates. API documentation can be found [here]().
+Command line tool for creating LLM prompts from your code using [Handlebars](https://handlebarsjs.com/) templates. API documentation can be found [here](https://seankim658.github.io/codeprompts/codeprompt/index.html).
 
 This was a project to brush up on Rust and is based on [code2prompt](https://github.com/mufeedvh/code2prompt) with some additional functionality that I found useful.
 
