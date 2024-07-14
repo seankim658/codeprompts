@@ -2,7 +2,7 @@
 
 Command line tool for creating LLM prompts from your code using [Handlebars](https://handlebarsjs.com/) templates.
 
-This was a project to brush up on Rust and is essentially just my own rip of [code2prompt](https://github.com/mufeedvh/code2prompt) with some functionality more specific to the HIVE lab.
+This was a project to brush up on Rust and is based on [code2prompt](https://github.com/mufeedvh/code2prompt) with some additional functionality that I found useful.
 
 - [Why Code Prompts?](#why-code-prompts)
 - [Installation](#installation)
@@ -76,6 +76,15 @@ Options:
 
       --exclude-from-tree
           Whether to exclude files/folders from the source tree based on exclude patterns. Defaults to False
+
+      --gitignore
+          Whether to respect the .gitignore file. Defaults to True
+
+  -d, --diff-staged
+          Whether to capture the git diff for staged changes only (equivalaent to running `git diff --cached` or `git diff --staged`. Defaults to False
+
+  -u, --diff-unstaged
+          Whether to capture the git diff for unstaged changes only (equivalaent to running `git diff`). Defaults to False
 
       --tokens
           Display approximate token count of the genrated prompt. Defaults to True
