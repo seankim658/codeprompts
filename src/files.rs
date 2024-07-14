@@ -42,6 +42,7 @@ pub fn parse_comma_delim_patterns(patterns: &Option<String>) -> Vec<String> {
 /// - `exclude_from_tree`: Whether to exclude files picked up by the exclude patterns from the
 /// tree.
 /// - `no_codeblock`: Whether to wrap the code in markdown code blocks.
+/// - `gitignore`: Whether or not to respect the gitignore file.
 ///
 /// ### Returns
 ///
@@ -57,6 +58,7 @@ pub fn traverse_directory(
     relative_paths: bool,
     exclude_from_tree: bool,
     no_codeblock: bool,
+    gitignore: bool,
 ) -> Result<(String, Vec<serde_json::Value>)> {
     // Will hold the files found in the traversal.
     let mut files = Vec::new();
@@ -69,6 +71,7 @@ pub fn traverse_directory(
     // Walk through the directory tree.
     // Initialize a WalkBuilder with the canonical root path (by default, respects .gitignore).
     let tree = WalkBuilder::new(&canonical_root_path)
+        .git_ignore(gitignore)
         .build()
         // Filter out errors, only keep successful entries.
         .filter_map(|e| e.ok())
