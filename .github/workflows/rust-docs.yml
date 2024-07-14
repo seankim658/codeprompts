@@ -15,6 +15,8 @@ jobs:
       run: rustup update --no-self-update stable
     - name: Build Documentation
       run: cargo doc --all --no-deps
+    - name: Create index.html
+      run: echo '<meta http-equiv="refresh" content="0; url=your_crate_name/index.html">' > target/doc/index.html
     - name: Deploy Docs
       uses: peaceiris/actions-gh-pages@v4
       with:
