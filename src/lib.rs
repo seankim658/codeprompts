@@ -11,6 +11,7 @@ pub mod files;
 pub mod spinner;
 pub mod template;
 pub mod tokenizer;
+pub mod git;
 
 pub mod prelude {
     //! Easy import prelude module.
@@ -18,4 +19,5 @@ pub mod prelude {
     pub use crate::spinner::setup_spinner;
     pub use crate::template::{get_template, render_template, setup_handlebars_registry};
     pub use crate::tokenizer::tokenizer_init;
+    pub use crate::git::git_diff;
 }
