@@ -1,6 +1,6 @@
 use anyhow::{Context, Error, Result};
 use arboard::Clipboard;
-use clap::{Parser, ArgAction};
+use clap::{ArgAction, Parser};
 use codeprompt::prelude::*;
 use colored::*;
 use serde_json::json;
@@ -31,6 +31,18 @@ struct Args {
     /// to False.
     #[arg(long, action(ArgAction::SetTrue))]
     exclude_from_tree: bool,
+
+    /// Whether to respect the .gitignore file. Defaults to True.
+    #[arg(long, action(ArgAction::SetFalse))]
+    gitignore: bool,
+
+    /// Whether to capture the git diff for staged changes only (equivalaent to running `git diff --cached` or `git diff --staged`. Defaults to False.
+    #[arg(short = 'd', long, action(ArgAction::SetTrue))]
+    diff_staged: bool,
+
+    /// Whether to capture the git diff for unstaged changes only (equivalaent to running `git diff`). Defaults to False.
+    #[arg(short = 'u', long, action(ArgAction::SetTrue))]
+    diff_unstaged: bool,
 
     /// Display approximate token count of the genrated prompt. Defaults to True.
     #[arg(long, action(ArgAction::SetFalse))]
@@ -100,6 +112,7 @@ fn main() -> Result<(), Error> {
         args.relative_paths,
         args.exclude_from_tree,
         args.no_codeblock,
+        args.gitignore,
     );
 
     let (tree, files) = match tree_data {
@@ -119,6 +132,20 @@ fn main() -> Result<(), Error> {
         }
     };
 
+    let git_diff_str = if args.diff_unstaged || args.diff_staged {
+        if let Some(s) = &spinner {
+            s.set_message("Generating git diff...");
+        }
+        match (args.diff_staged, args.diff_unstaged) {
+            (true, true) => git_diff(&args.path, 2)?,
+            (true, false) => git_diff(&args.path, 0)?,
+            (false, true) => git_diff(&args.path, 1)?,
+            (_, _) => return Err(Error::msg("Error parsing git diff arguments.")),
+        }
+    } else {
+        String::new()
+    };
+
     if let Some(s) = &spinner {
         s.finish_with_message("Done!".green().to_string());
     }
@@ -127,6 +154,7 @@ fn main() -> Result<(), Error> {
         "absolute_code_path": basename(&args.path),
         "source_tree": tree,
         "files": files,
+        "git_diff": git_diff_str,
     });
 
     let rendered_output = render_template(&handlebars, template_name, &json_data)?;
