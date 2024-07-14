@@ -44,7 +44,7 @@ jobs:
         cd target/${{ matrix.platform.target }}/release
         if [[ "${{ matrix.platform.os }}" == "windows-latest" ]]; then
           powershell -Command "(Get-FileHash codeprompt-${{ matrix.platform.release_for }}.exe -Algorithm SHA256).Hash.ToLower() + '  codeprompt-${{ matrix.platform.release_for }}.exe'" > codeprompt-${{ matrix.platform.release_for }}.sha256
-        elif [[ "${{ matrix.platform.os }}" == "macos-latest" ]]; then
+        elif [[ "${{ matrix.platform.os }}" == "macos-12" || "${{ matrix.platform.os }}" == "macos-latest" ]]; then
           shasum -a 256 codeprompt-${{ matrix.platform.release_for }} > codeprompt-${{ matrix.platform.release_for }}.sha256
         else
           sha256sum codeprompt-${{ matrix.platform.release_for }} > codeprompt-${{ matrix.platform.release_for }}.sha256
