@@ -7,12 +7,16 @@ Source Tree:
 {{ source_tree }}
 ```
 
+## Diff
+
 {{#if git_diff}}
 Diff:
 ```
 {{git_diff}}
 ```
 {{/if}}
+
+## Request
 
 Make sure to thoroughly analyze the git diff output in order to understand its purpose, that is crucial to generating the highest quality commit message. The git commit should have the following attributes:
 
@@ -23,4 +27,4 @@ Make sure to thoroughly analyze the git diff output in order to understand its p
 5. No Period at the End: Subject line does not end with a period.
 7. Separate Subject From Body With a Blank Line: If using a body, leave one blank line after the subject.
 
-Write the content in Markdown format. Try to stick to what can be learned and inferred from the diff output itself. However, let the user know if additional context is needed. The commit message should make be clear enough that an outside contributor can quickly scan the commit message and diff output and understand what happened and what was changed or fixed through that particular commit.
+Write the content in Markdown format. Try to stick to what can be learned and inferred from the diff output itself. However, let me know if additional context is needed. The commit message should make be clear enough that an outside contributor can quickly scan the commit message and diff output and understand what happened and what was changed or fixed through that particular commit.

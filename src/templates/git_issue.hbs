@@ -6,6 +6,8 @@ Source Tree:
 {{ source_tree }}
 ```
 
+## Code
+
 {{#each files}}
 {{#if code}}
 `{{path}}`:
@@ -25,7 +27,7 @@ Source Tree:
 {{#if github_issue.body}}
 - Body: {{github_issue.body}}
 {{else}}
-No issue description available.
+- Body: No issue description available.
 {{/if}}
 {{else}}
 No issue fetched or unable to fetch issue.
@@ -35,6 +37,7 @@ No issue fetched or unable to fetch issue.
 ## Diff (Recent Changes)
 ```
 {{git_diff}}
+```
 {{/if}}
 
 I need help with the described Github issue for my code. Based on the code and issue details please help me implement the ticket suggestions, changes, or bug reports. I've provided you with the issue number, title, state, URL, and the issue body (the issue description).
