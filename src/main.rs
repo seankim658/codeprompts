@@ -248,7 +248,7 @@ async fn main() -> Result<(), Error> {
     } else {
         if args.tokens {
             println!(
-                "{}{}{} Token count: {}",
+                "\n{}{}{} Token count: {}",
                 "[".bold().white(),
                 "i".bold().blue(),
                 "]".bold().white(),
