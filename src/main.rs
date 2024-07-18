@@ -38,11 +38,11 @@ struct Args {
     #[arg(long, action(ArgAction::SetFalse))]
     gitignore: bool,
 
-    /// Whether to capture the git diff for staged changes only (equivalaent to running `git diff --cached` or `git diff --staged`. Defaults to False.
+    /// Whether to capture the git diff for staged changes only (equivalent to running `git diff --cached` or `git diff --staged`. Defaults to False.
     #[arg(short = 'd', long, action(ArgAction::SetTrue))]
     diff_staged: bool,
 
-    /// Whether to capture the git diff for unstaged changes only (equivalaent to running `git diff`). Defaults to False.
+    /// Whether to capture the git diff for unstaged changes only (equivalent to running `git diff`). Defaults to False.
     #[arg(short = 'u', long, action(ArgAction::SetTrue))]
     diff_unstaged: bool,
 
