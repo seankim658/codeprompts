@@ -3,12 +3,14 @@ use arboard::Clipboard;
 use clap::{ArgAction, Parser};
 use codeprompt::prelude::*;
 use colored::*;
+use git2::Repository;
 use serde_json::json;
 use std::io::Write;
 use std::path::PathBuf;
 
+/// Command-line arguments for the codeprompt application.
 #[derive(Parser, Debug)]
-#[clap(name = "codeprompt", version = "0.1.0")]
+#[clap(name = "codeprompt", version = "0.1.2")]
 struct Args {
     /// Path to project directory.
     #[arg()]
@@ -86,9 +88,19 @@ struct Args {
     /// Whether to print the output as JSON. Defaults to False.
     #[arg(long, action(ArgAction::SetTrue))]
     json: bool,
+
+    /// Fetch a specific Github issue for the repository.
+    #[arg(long)]
+    issue: Option<u32>,
 }
 
-fn main() -> Result<(), Error> {
+/// Main entry point for the codeprompt application.
+///
+/// ### Returns
+///
+/// - `Result<(), Error>`: Ok(()) on successful execution, or an Error if any step fails.
+#[tokio::main]
+async fn main() -> Result<(), Error> {
     let args = Args::parse();
 
     let (template, template_name) = get_template(&args.template)?;
@@ -122,7 +134,7 @@ fn main() -> Result<(), Error> {
                 s.finish_with_message("Failed!".red().to_string());
             }
             eprint!(
-                "{}{}{} {}",
+                "\n{}{}{} {}",
                 "[".bold().white(),
                 "!".bold().red(),
                 "]".bold().white(),
@@ -132,14 +144,29 @@ fn main() -> Result<(), Error> {
         }
     };
 
+    let repo = if args.diff_unstaged || args.diff_staged || args.issue.is_some() {
+        Some(
+            Repository::open(&args.path)
+                .context("Failed to open the repository. Check your current working directory.")?,
+        )
+    } else {
+        None
+    };
+
     let git_diff_str = if args.diff_unstaged || args.diff_staged {
         if let Some(s) = &spinner {
             s.set_message("Generating git diff...");
         }
         match (args.diff_staged, args.diff_unstaged) {
-            (true, true) => git_diff(&args.path, 2)?,
-            (true, false) => git_diff(&args.path, 0)?,
-            (false, true) => git_diff(&args.path, 1)?,
+            (true, true) => repo.as_ref().map_or(
+                Err(Error::msg("Used git diff flag but failed to open the repository. Check your current working directory.")),
+                |repo| git_diff(repo, 2))?,
+            (true, false) => repo.as_ref().map_or(
+                Err(Error::msg("Used git diff flag but failed to open the repository. Check your current working directory.")),
+                |repo| git_diff(repo, 0))?,
+            (false, true) => repo.as_ref().map_or(
+                Err(Error::msg("Used git diff flag but failed to open the repository. Check your current working directory.")),
+                |repo| git_diff(repo, 1))?,
             (_, _) => return Err(Error::msg("Error parsing git diff arguments.")),
         }
     } else {
@@ -150,12 +177,50 @@ fn main() -> Result<(), Error> {
         s.finish_with_message("Done!".green().to_string());
     }
 
-    let json_data = json!({
+    let mut json_data = json!({
         "absolute_code_path": basename(&args.path),
         "source_tree": tree,
         "files": files,
         "git_diff": git_diff_str,
     });
+
+    if let Some(issue_number) = args.issue {
+        if let Some(s) = &spinner {
+            s.set_message(format!("Fetching Github issue #{}...", issue_number));
+        }
+        let (owner, repo_name) = repo.as_ref().map_or(
+            Err(Error::msg("Used issue flag but failed to open the repository. Check your current working directory.")),
+            |repo| get_repo_info(repo))?;
+        match fetch_github_issue(&owner, &repo_name, issue_number).await {
+            Ok(issue) => {
+                json_data["github_issue"] = serde_json::to_value(issue)?;
+                if let Some(s) = &spinner {
+                    s.finish_with_message(
+                        format!("Github issue #{} fetched successfully!", issue_number)
+                            .green()
+                            .to_string(),
+                    );
+                }
+            }
+            Err(e) => {
+                if let Some(s) = &spinner {
+                    s.finish_with_message(
+                        format!("Failed to fetch Github issue #{}: {}", issue_number, e)
+                            .red()
+                            .to_string(),
+                    );
+                }
+                eprintln!(
+                    "\n{}{}{} {}",
+                    "[".bold().white(),
+                    "!".bold().red(),
+                    "]".bold().white(),
+                    format!("Failed to retrieve Github repo.").red()
+                );
+                std::process::exit(1);
+            }
+        }
+    }
 
     let rendered_output = render_template(&handlebars, template_name, &json_data)?;
 
