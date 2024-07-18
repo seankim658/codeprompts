@@ -1,6 +1,6 @@
 # Code Prompts
 
-Command line tool for creating LLM prompts from your code using [Handlebars](https://handlebarsjs.com/) templates. API documentation can be found [here](https://seankim658.github.io/codeprompts/codeprompt/index.html).
+Command line tool for creating LLM prompts from your code using [Handlebars](https://handlebarsjs.com/) templates. API documentation can be found [here](https://seankim658.github.io/codeprompts/codeprompt/index.html). The best results are using this tool with Claude 3.5.
 
 This was a project to brush up on Rust and is based on [code2prompt](https://github.com/mufeedvh/code2prompt) with some additional functionality that I found useful.
 
@@ -11,7 +11,7 @@ This was a project to brush up on Rust and is based on [code2prompt](https://git
 - [Usage](#usage)
   - [Arguments](#arguments)
 - [Templates](#templates)
-- [Notes](#notes)
+- [Usage Guides](./docs/README.md)
 
 ---
 
@@ -30,6 +30,8 @@ To get the most out of LLMs, prompting has to be clear, comprehensive, and consi
 3. By using Handlebar templates, the prompts will be comprehensive and consistent. If your preferred style guide and/or coding practices are updated in the future, there is no need to remember to update all future manually typed prompts. Instead, just update the target Handlebars template once.
 
 ## Installation
+
+To download and use the code prompts command-line tool, you have two options: you can download the release binary or compile from source.
 
 ### Release Binary
 
@@ -54,9 +56,11 @@ cargo build --release
 
 ## Usage
 
+More detailed usage guides can be found [here](./docs/README.md).
+
 ### Arguments
 
-The code prompts command line tool has the following arguments:
+More extensive documentation on the options can be found [here](./docs/options.md). The code prompts command line tool has the following arguments:
 
 ```txt
 Usage: codeprompt [OPTIONS] <PATH>
@@ -146,7 +150,3 @@ Currently, the included pre-defined templates are:
 | [`git_commit.hbs`](./src/templates/git_commit.hbs)                         | Template for creating a concise and accurate git commit message. Can be used with both the `diff-staged` and `diff-unstaged` options.                                      |
 | [`git_issues.hbs`](./src/templates/git_issue.hbs)                          | Template for implementing changes based on a Github issue.                                                                                                                 |
 | [`code_optimization.hbs`](./src/templates/code_optimization.hbs)           | Template for optimizing code in time and space complexity.                                                                                                                 |
-
-## Notes
-
-The `isssues` flag will only work for public repositories.
