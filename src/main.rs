@@ -10,7 +10,7 @@ use std::path::PathBuf;
 
 /// Command-line arguments for the codeprompt application.
 #[derive(Parser, Debug)]
-#[clap(name = "codeprompt", version = "0.1.2")]
+#[clap(name = "codeprompt", version = "0.1.3")]
 struct Args {
     /// Path to project directory.
     #[arg()]
