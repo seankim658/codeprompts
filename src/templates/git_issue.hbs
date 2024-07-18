@@ -1,0 +1,44 @@
+Project Path: {{ absolute_code_path }}
+
+Source Tree:
+
+```
+{{ source_tree }}
+```
+
+{{#each files}}
+{{#if code}}
+`{{path}}`:
+
+{{code}}
+
+{{/if}}
+{{/each}}
+
+## Issue Details
+{{#if github_issue}}
+
+### Issue #{{github_issue.number}}: {{github_issue.title}}
+- State: {{github_issue.state}}
+- URL: {{github_issue.html_url}}
+
+{{#if github_issue.body}}
+- Body: {{github_issue.body}}
+{{else}}
+No issue description available.
+{{/if}}
+{{else}}
+No issue fetched or unable to fetch issue.
+{{/if}}
+
+{{#if git_diff}}
+## Diff (Recent Changes)
+```
+{{git_diff}}
+{{/if}}
+
+I need help with the described Github issue for my code. Based on the code and issue details please help me implement the ticket suggestions, changes, or bug reports. I've provided you with the issue number, title, state, URL, and the issue body (the issue description).
+
+Start with providing an outlined, high level plan for what has to be done. Then go into the specifics of the code that needs to be changed and how to change it in relation to the issue information.
+
+Try to stick to clear, readable, and good coding practices. Let me know if there is any additional context or dependencies that you need in order to implement the changes. Also let me know if you have any questions regarding the requset. Please review your work before finishing.
