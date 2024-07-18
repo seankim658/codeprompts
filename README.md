@@ -11,6 +11,7 @@ This was a project to brush up on Rust and is based on [code2prompt](https://git
 - [Usage](#usage)
   - [Arguments](#arguments)
 - [Templates](#templates)
+- [Notes](#notes)
 
 ---
 
@@ -120,6 +121,9 @@ Options:
       --json
           Whether to print the output as JSON. Defaults to False
 
+      --issue <ISSUE>
+          Fetch a specific Github issue for the repository
+
   -h, --help
           Print help (see a summary with '-h')
 
@@ -140,4 +144,9 @@ Currently, the included pre-defined templates are:
 | [`default_template.hbs`](./src/templates/default_template.hbs)             | This is a simple default template that will structure your project path, source tree, and code blocks.                                                                     |
 | [`documentation_template.hbs`](./src/templates/documentation_template.hbs) | The documentation template creates a prompt for documenting code. The documentation guidelines are consistent with the HIVE lab guidelines and documentation requirements. |
 | [`git_commit.hbs`](./src/templates/git_commit.hbs)                         | Template for creating a concise and accurate git commit message. Can be used with both the `diff-staged` and `diff-unstaged` options.                                      |
-| [`code_optimization.hbs`](./src/templates/code_optimization.hbs) | Template for optimizing code in time and space complexity. |
+| [`git_issues.hbs`](./src/templates/git_issue.hbs)                          | Template for implementing changes based on a Github issue.                                                                                                                 |
+| [`code_optimization.hbs`](./src/templates/code_optimization.hbs)           | Template for optimizing code in time and space complexity.                                                                                                                 |
+
+## Notes
+
+The `isssues` flag will only work for public repositories.
