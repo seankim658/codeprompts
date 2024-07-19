@@ -92,6 +92,10 @@ struct Args {
     /// Fetch a specific Github issue for the repository.
     #[arg(long)]
     issue: Option<u32>,
+
+    /// Run in verbose mode to investigate glob pattern matching.
+    #[arg(long, action(ArgAction::SetTrue))]
+    verbose: bool
 }
 
 /// Main entry point for the codeprompt application.
@@ -125,6 +129,7 @@ async fn main() -> Result<(), Error> {
         args.exclude_from_tree,
         args.no_codeblock,
         args.gitignore,
+        args.verbose,
     );
 
     let (tree, files) = match tree_data {
