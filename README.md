@@ -86,10 +86,10 @@ Options:
           Whether to respect the .gitignore file. Defaults to True
 
   -d, --diff-staged
-          Whether to capture the git diff for staged changes only (equivalaent to running `git diff --cached` or `git diff --staged`. Defaults to False
+          Whether to capture the git diff for staged changes only (equivalent to running `git diff --cached` or `git diff --staged`. Defaults to False
 
   -u, --diff-unstaged
-          Whether to capture the git diff for unstaged changes only (equivalaent to running `git diff`). Defaults to False
+          Whether to capture the git diff for unstaged changes only (equivalent to running `git diff`). Defaults to False
 
       --tokens
           Display approximate token count of the genrated prompt. Defaults to True
@@ -127,6 +127,9 @@ Options:
 
       --issue <ISSUE>
           Fetch a specific Github issue for the repository
+
+      --verbose
+          Run in verbose mode to investigate glob pattern matching
 
   -h, --help
           Print help (see a summary with '-h')

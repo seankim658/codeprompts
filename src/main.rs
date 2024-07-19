@@ -93,7 +93,7 @@ struct Args {
     #[arg(long)]
     issue: Option<u32>,
 
-    /// Run in verbose mode to investigate glob pattern matching.
+    /// Run in verbose mode to investigate glob pattern matching. Defaults to False.
     #[arg(long, action(ArgAction::SetTrue))]
     verbose: bool
 }
