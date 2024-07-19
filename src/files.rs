@@ -98,7 +98,7 @@ pub fn traverse_directory(
                     // Check if the file should be excluded from the tree based on the
                     // exclude patterns and exclude_from_tree arguments. Break the path component
                     // loop if it any part of the path should be excluded.
-                    if exclude_from_tree && !include_file(path, include, exclude, include_priority, verbose)
+                    if exclude_from_tree && !include_file(path, include, exclude, include_priority, relative_paths, verbose)
                     {
                         break;
                     }
@@ -120,7 +120,7 @@ pub fn traverse_directory(
                     };
                 }
 
-                if path.is_file() && include_file(path, include, exclude, include_priority, verbose) {
+                if path.is_file() && include_file(path, include, exclude, include_priority, relative_paths, verbose) {
                     // Read in the file contents into bytes.
                     if let Ok(file_bytes) = fs::read(path) {
                         let code_string = String::from_utf8_lossy(&file_bytes);
@@ -217,6 +217,7 @@ fn include_file(
     include: &[String],
     exclude: &[String],
     include_priority: bool,
+    relative_paths: bool,
     verbose: bool,
 ) -> bool {
     let canonical_root_path = match fs::canonicalize(path) {
@@ -227,24 +228,54 @@ fn include_file(
         }
     };
     let path_string = canonical_root_path.to_str().unwrap();
+    let relative_path = path
+        .strip_prefix(std::env::current_dir().unwrap())
+        .unwrap_or(path);
+    let relative_path_string = relative_path.to_str().unwrap();
 
     if verbose {
-        println!("=> Target path: {}", path_string);
+        if relative_paths {
+            println!("=> Target path: {}", relative_path_string);
+        } else {
+            println!("=> Target path: {}", path_string);
+        }
     }
 
+    // Function to strip "./" prefix for relative paths.
+    let strip_relative_prefix: for<'a> fn(&'a str) -> &'a str = |s| s.strip_prefix("./").unwrap_or(s);
+
     // Check the glob patterns.
-    let include_bool = include
-        .iter()
-        .any(|pattern| Pattern::new(pattern).unwrap().matches(path_string));
-    let exclude_bool = exclude
-        .iter()
-        .any(|pattern| Pattern::new(pattern).unwrap().matches(path_string));
+    let include_bool = include.iter().any(|pattern| {
+        let matches = if relative_paths {
+            let stripped_pattern = strip_relative_prefix(pattern);
+            Pattern::new(stripped_pattern).unwrap().matches(relative_path_string)
+        } else {
+            Pattern::new(pattern).unwrap().matches(path_string)
+        };
+        if verbose {
+            println!("\tChecking include pattern '{}': {}", pattern, matches);
+        }
+        matches
+    });
+
+    let exclude_bool = exclude.iter().any(|pattern| {
+        let matches = if relative_paths {
+            let stripped_pattern = strip_relative_prefix(pattern);
+            Pattern::new(stripped_pattern).unwrap().matches(relative_path_string)
+        } else {
+            Pattern::new(pattern).unwrap().matches(path_string)
+        };
+        if verbose {
+            println!("\tChecking exclude pattern '{}': {}", pattern, matches);
+        }
+        matches
+    });
 
     // Determine if the file should be included.
     let result = match (include_bool, exclude_bool) {
         (true, true) => {
             if verbose {
-                println!("\tInclude due to include priority: {}", include_priority);
+                println!("\tMatch conflict, include priority: {}", include_priority);
             }
             include_priority
         }
@@ -262,7 +293,10 @@ fn include_file(
         }
         (false, false) => {
             if verbose {
-                println!("\tNot in either condition, fallback: {}", include.is_empty());
+                println!(
+                    "\tNot in either condition, fallback: {}",
+                    include.is_empty()
+                );
             }
             include.is_empty()
         }
