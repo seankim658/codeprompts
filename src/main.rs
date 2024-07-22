@@ -1,6 +1,7 @@
 use anyhow::{Context, Error, Result};
 use arboard::Clipboard;
-use clap::{ArgAction, Parser};
+use clap::{ArgAction, Command, CommandFactory, Parser, Subcommand};
+use clap_complete::{generate, Generator, Shell};
 use codeprompt::prelude::*;
 use colored::*;
 use git2::Repository;
@@ -12,6 +13,10 @@ use std::path::PathBuf;
 #[derive(Parser, Debug)]
 #[clap(name = "codeprompt", version = "0.1.4")]
 struct Args {
+    ///
+    #[command(subcommand)]
+    subcommand: Option<SubCommand>,
+    
     /// Path to project directory.
     #[arg()]
     path: PathBuf,
@@ -98,6 +103,19 @@ struct Args {
     verbose: bool
 }
 
+#[derive(Subcommand, Debug)]
+enum SubCommand {
+    #[command(about = "Generate shell completion scripts.")]
+    Completion {
+        #[clap(value_enum)]
+        shell: Shell
+    }
+}
+
+fn print_completions<G: Generator>(gen: G, cmd: &mut Command) {
+    generate(gen, cmd, cmd.get_name().to_owned(), &mut std::io::stdout());
+}
+
 /// Main entry point for the codeprompt application.
 ///
 /// ### Returns
@@ -106,6 +124,12 @@ struct Args {
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     let args = Args::parse();
+
+    if let Some(SubCommand::Completion { shell }) = args.subcommand {
+        let mut cmd = Args::command();
+        print_completions(shell, &mut cmd);
+        return Ok(());
+    }
 
     let (template, template_name) = get_template(&args.template)?;
     let handlebars = setup_handlebars_registry(&template, template_name)?;
