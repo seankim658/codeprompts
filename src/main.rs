@@ -11,7 +11,7 @@ use std::path::PathBuf;
 
 /// Command-line arguments for the codeprompt application.
 #[derive(Parser, Debug)]
-#[clap(name = "codeprompt", version = "0.1.4")]
+#[clap(name = "codeprompt", version = "0.1.5")]
 struct Args {
     ///
     #[command(subcommand)]

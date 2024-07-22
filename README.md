@@ -15,6 +15,8 @@ This was a project to brush up on Rust and is based on [code2prompt](https://git
 
 ---
 
+:star: New in `v0.1.5`: Tab completions are now supported!
+
 ## Why Code Prompts?
 
 Manually copy and pasting code and code snippets to LLMs has several issues:
