@@ -13,7 +13,7 @@ use std::path::PathBuf;
 #[derive(Parser, Debug)]
 #[clap(name = "codeprompt", version = "0.1.5")]
 struct Args {
-    ///
+    /// Subcommand for shell completion generation.
     #[command(subcommand)]
     subcommand: Option<SubCommand>,
 
@@ -136,7 +136,7 @@ async fn main() -> Result<(), Error> {
                 project_root
             } else {
                 eprint!(
-                    "{}{}{} {}",
+                    "{}{}{} {}\n",
                     "[".bold().white(),
                     "!".bold().red(),
                     "]".bold().white(),
