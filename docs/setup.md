@@ -53,7 +53,7 @@ source ~/.config/fish/config.fish
 
 ## Setting up Shell Completions
 
-Codeprompts supports shell completions for bash, zsh, fish, and powershell. To set up completions:
+Codeprompts supports shell completions for bash, zsh, fish, and powershell (shell completions will only work if you install the tool to the system path). To set up completions:
 
 1. Generate the completion script for your shell or download from the `completions/` directory.
 
