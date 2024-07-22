@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["fetch_github_issue","get_repo_info","git_diff"],"struct":["Issue"]};
