@@ -18,18 +18,16 @@ Open your shell configuration file and add:
 alias <alias>='path/to/codeprompts'
 ```
 
-Personally, I use `prompt` as my alias, but you can choose whatever you'd like. Once you've added the alias, save the file and apply the changes, for example:
-
 ```bash
 source ~/.bashrc
 ```
 
 ## Add to Path
 
-Alternativley, you can add the executable to your system PATH. To do so, you can open your configuration file and add something along the lines of:
+Alternativley, you can add the executable to your system PATH.
 
 ```bash
-export PATH=$PATH:/path/to/codeprompts/directory
+sudo cp path/to/codeprompts /usr/local/bin/
 ```
 
 Once you've added the path, save the file and apply the changes, for example: 
