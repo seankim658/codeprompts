@@ -36,9 +36,7 @@ Alternativley, you can add the executable to your system PATH.
 sudo cp path/to/codeprompts /usr/local/bin/
 ```
 
-Once you've added the path, save the file and apply the changes, for example: 
-
-After choosign one of the setup options, apply the changes:
+After choosing one of the setup options, apply the changes:
 
 ```bash
 # For bash
