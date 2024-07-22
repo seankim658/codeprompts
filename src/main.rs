@@ -140,7 +140,7 @@ async fn main() -> Result<(), Error> {
                     "[".bold().white(),
                     "!".bold().red(),
                     "]".bold().white(),
-                    "Error: PATH argumnet is required when not using the completion subcommand."
+                    "Error: PATH argument is required when not using the completion subcommand."
                         .bold()
                         .red()
                 );
