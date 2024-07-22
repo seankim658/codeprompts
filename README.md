@@ -31,7 +31,7 @@ To get the most out of LLMs, prompting has to be clear, comprehensive, and consi
 
 ## Installation
 
-To download and use the code prompts command-line tool, you have two options: you can download the release binary or compile from source.
+To download and use the code prompts command-line tool, you have two options: you can download the release binary or compile from source. For more detailed steps, including setting up tab completions, see the [setup](/docs/setup.md) guide.
 
 ### Release Binary
 
@@ -63,10 +63,16 @@ More detailed usage guides can be found [here](./docs/README.md).
 More extensive documentation on the options can be found [here](./docs/options.md). The code prompts command line tool has the following arguments:
 
 ```txt
-Usage: codeprompt [OPTIONS] <PATH>
+Command-line arguments for the codeprompt application
+
+Usage: codeprompt [OPTIONS] [PATH] [COMMAND]
+
+Commands:
+  completion  Generate shell completion scripts.
+  help        Print this message or the help of the given subcommand(s)
 
 Arguments:
-  <PATH>
+  [PATH]
           Path to project directory
 
 Options:
@@ -129,7 +135,7 @@ Options:
           Fetch a specific Github issue for the repository
 
       --verbose
-          Run in verbose mode to investigate glob pattern matching
+          Run in verbose mode to investigate glob pattern matching. Defaults to False
 
   -h, --help
           Print help (see a summary with '-h')
