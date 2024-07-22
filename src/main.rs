@@ -16,10 +16,10 @@ struct Args {
     ///
     #[command(subcommand)]
     subcommand: Option<SubCommand>,
-    
+
     /// Path to project directory.
     #[arg()]
-    path: PathBuf,
+    path: Option<PathBuf>,
 
     /// Glob patterns to include.
     #[arg(long)]
@@ -100,7 +100,7 @@ struct Args {
 
     /// Run in verbose mode to investigate glob pattern matching. Defaults to False.
     #[arg(long, action(ArgAction::SetTrue))]
-    verbose: bool
+    verbose: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -108,8 +108,8 @@ enum SubCommand {
     #[command(about = "Generate shell completion scripts.")]
     Completion {
         #[clap(value_enum)]
-        shell: Shell
-    }
+        shell: Shell,
+    },
 }
 
 fn print_completions<G: Generator>(gen: G, cmd: &mut Command) {
@@ -125,11 +125,29 @@ fn print_completions<G: Generator>(gen: G, cmd: &mut Command) {
 async fn main() -> Result<(), Error> {
     let args = Args::parse();
 
-    if let Some(SubCommand::Completion { shell }) = args.subcommand {
-        let mut cmd = Args::command();
-        print_completions(shell, &mut cmd);
-        return Ok(());
-    }
+    let project_root = match &args.subcommand {
+        Some(SubCommand::Completion { shell }) => {
+            let mut cmd = Args::command();
+            print_completions(*shell, &mut cmd);
+            return Ok(());
+        }
+        None => {
+            if let Some(project_root) = args.path {
+                project_root
+            } else {
+                eprint!(
+                    "{}{}{} {}",
+                    "[".bold().white(),
+                    "!".bold().red(),
+                    "]".bold().white(),
+                    "Error: PATH argumnet is required when not using the completion subcommand."
+                        .bold()
+                        .red()
+                );
+                std::process::exit(1);
+            }
+        }
+    };
 
     let (template, template_name) = get_template(&args.template)?;
     let handlebars = setup_handlebars_registry(&template, template_name)?;
@@ -144,7 +162,7 @@ async fn main() -> Result<(), Error> {
     let exclude_patterns = parse_comma_delim_patterns(&args.exclude);
 
     let tree_data = traverse_directory(
-        &args.path,
+        &project_root,
         &include_patterns,
         &exclude_patterns,
         args.include_priority,
@@ -175,7 +193,7 @@ async fn main() -> Result<(), Error> {
 
     let repo = if args.diff_unstaged || args.diff_staged || args.issue.is_some() {
         Some(
-            Repository::open(&args.path)
+            Repository::open(&project_root)
                 .context("Failed to open the repository. Check your current working directory.")?,
         )
     } else {
@@ -207,7 +225,7 @@ async fn main() -> Result<(), Error> {
     }
 
     let mut json_data = json!({
-        "absolute_code_path": basename(&args.path),
+        "absolute_code_path": basename(&project_root),
         "source_tree": tree,
         "files": files,
         "git_diff": git_diff_str,
@@ -268,7 +286,7 @@ async fn main() -> Result<(), Error> {
     if args.json {
         let json_output = json!({
             "prompt": rendered_output,
-            "directory_name": basename(&args.path),
+            "directory_name": basename(&project_root),
             "token_count": tokens,
             "files": paths,
         });
