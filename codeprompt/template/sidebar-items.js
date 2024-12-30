@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["get_template","render_template","setup_handlebars_registry"]};
