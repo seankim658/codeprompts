@@ -1,0 +1,16 @@
+[package]
+name = "codeprompt-tui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+codeprompt = { path = "../cli/" }
+crossterm = "0.28.0"
+ratatui = "0.29.0"
+tui-tree-widget = "0.23.0"
+anyhow = "1.0.86"
+walkdir = "2.5.0"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+dirs = "5.0"
