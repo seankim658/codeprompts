@@ -191,7 +191,7 @@ Here's a snippet of what will be copied to your clipboard:
 >  133 |             if let Some(s) = &spinner {
 >  134 |                 s.finish_with_message("Failed!".red().to_string());
 >  135 |             }
->  136 |             eprint!(
+>  136 |             eprintln!(
 >  137 |                 "\n{}{}{} {}",
 >  138 |                 "[".bold().white(),
 >  139 |                 "!".bold().red(),

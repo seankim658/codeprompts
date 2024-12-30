@@ -300,7 +300,7 @@ In this example I used issue [#9](https://github.com/seankim658/codeprompts/issu
 >  133 |             if let Some(s) = &spinner {
 >  134 |                 s.finish_with_message("Failed!".red().to_string());
 >  135 |             }
->  136 |             eprint!(
+>  136 |             eprintln!(
 >  137 |                 "\n{}{}{} {}",
 >  138 |                 "[".bold().white(),
 >  139 |                 "!".bold().red(),

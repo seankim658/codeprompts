@@ -135,7 +135,7 @@ async fn main() -> Result<(), Error> {
             if let Some(project_root) = args.path {
                 project_root
             } else {
-                eprint!(
+                eprintln!(
                     "{}{}{} {}\n",
                     "[".bold().white(),
                     "!".bold().red(),
@@ -180,7 +180,7 @@ async fn main() -> Result<(), Error> {
             if let Some(s) = &spinner {
                 s.finish_with_message("Failed!".red().to_string());
             }
-            eprint!(
+            eprintln!(
                 "\n{}{}{} {}",
                 "[".bold().white(),
                 "!".bold().red(),
