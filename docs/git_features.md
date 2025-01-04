@@ -10,7 +10,7 @@ Right now, the code prompt tool supports 3 options for using git features.
 ## Git Diff
 
 - **Staged Changes**: You can generate the `git diff` for staged changes using the `--diff-staged` option (or `-d`). The `--diff-staged` flag is equivalent to running `git diff --staged`.
-- **Unstaged Changes**: You can generate the `git diff` for unstaged changes using the `--diff-unstaged` option (or `u`). The `--diff-unstaged` flag is equivalent to running `git diff`. 
+- **Unstaged Changes**: You can generate the `git diff` for unstaged changes using the `--diff-unstaged` option (or `-u`). The `--diff-unstaged` flag is equivalent to running `git diff`. 
 - **All Changes**: If both options are used, the diffs will be concatenated and both will be used.
 
 A common workflow is to:
@@ -19,14 +19,14 @@ A common workflow is to:
 - Run `git status` to view the changed files.
 - Stage a file using `git add /file/to/stage`.
 - Use the [`git_commit.hbs`](../src/templates/git_commit.hbs) template to generate the commit message for the changes in that file.
-  - Ex: `prompt . --diff-staged -t <path/to/git_commit.hbs>`
+  - Ex: `codeprompt . --diff-staged -t <path/to/git_commit.hbs>`
 - Paste output into LLM of choice and get your comprehensive commit message.
 
 From the pre-defined templates, the diff flags can be used with the [`git_commit.hbs`](../src/templates/git_commit.hbs) and [`git_issue.hbs`](../src/templates/git_issue.hbs) templates.
 
 ### Diff Example
 
-In this example I made some minor typo and formatting changes to the project's README. I staged the `README.md` file and used the `-d` option flag to render a git diff template for the change. These changes are very minor and its unlikely you'd need an LLM to generate the commit message for these changes but for examples sake this is sufficient.
+In this example I made some minor typo and formatting changes to the project's README. I staged the `README.md` file and used the `--diff-staged` option flag along with the `--template` option to specify the git commit template (`git_commit.hbs`). These changes are very minor and its unlikely you'd need an LLM to generate the commit message for these changes but for examples sake this is sufficient.
 
 > Project Path: codeprompt
 > 
@@ -127,7 +127,7 @@ Note that the issues flag will only work for public repositories.
 
 ### Issue Example
 
-In this example I used issue [#9](https://github.com/seankim658/codeprompts/issues/9) on this repository by specifing the issue flag like `--issue 9`. For the example's completeness I also left the `-d` flag to show that the template can also make use of recent changes (using the `-d` or `-u` options) to provide the LLM with additional context that might be useful in implementing the issue changes.
+In this example I used issue [#9](https://github.com/seankim658/codeprompts/issues/9) on this repository by specifing the issue flag like `--issue 9`. For the example's completeness I also left the `--diff-staged` flag to show that the template can also make use of recent changes (using the `--diff-staged` or `-diff-unstaged` options) to provide the LLM with additional context that might be useful in implementing the issue changes.
 
 > Project Path: codeprompt
 > 

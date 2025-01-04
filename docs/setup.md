@@ -18,9 +18,9 @@ chmod +x <path/to/codeprompts>
 
 ## Running the Tool
 
-You can run the tool by passing the full path to the executable. However, for convenience, you have several options to run it without specifying the full path each time.
+You can run the tool by passing the full path to the executable. However, for convenience, you have a couple options to run it without specifying the full path each time:
 
-1. Create Alias
+1. Create an Alias
 
 Open your shell configuration file (`~/.bashrc`, `~/.zshrc`, `~/.config/fish/config.fish`, etc) and add: 
 
@@ -28,7 +28,7 @@ Open your shell configuration file (`~/.bashrc`, `~/.zshrc`, `~/.config/fish/con
 alias <alias>='path/to/codeprompts'
 ```
 
-2. Add to Path
+2. Add to System PATH
 
 Alternativley, you can add the executable to your system PATH.
 
@@ -36,7 +36,7 @@ Alternativley, you can add the executable to your system PATH.
 sudo cp path/to/codeprompts /usr/local/bin/
 ```
 
-After choosing one of the setup options, apply the changes:
+After choosing one of the setup options, apply the changes by reloading your shell configuration:
 
 ```bash
 # For bash
@@ -51,47 +51,50 @@ source ~/.config/fish/config.fish
 
 ## Setting up Shell Completions
 
-Codeprompts supports shell completions for bash, zsh, fish, and powershell (shell completions will only work if you install the tool to the system path). To set up completions:
+Codeprompts supports shell completions for Bash, Zsh, Fish, and Powershell.
 
 1. Generate the completion script for your shell or download from the `completions/` directory.
 
 You can download the appropriate pre-defined completions file or generate it with:
 
 ```bash
-codeprompts completion <shell>
+codeprompts completion <shell> > codeprompts-completion.<shell>
 ```
 
-Replace `<shell>` with `bash`, `zsh`, `fish`, or `powershell` as appropriate. For `bash`, `zsh`, and `fish` it is common to store these files in `~/.local/share/<directory>/codeprompts-completions.<shell>`, such as:
+Replace `<shell>` with `bash`, `zsh`, `fish`, or `powershell` as appropriate. 
+
+You can place completion scripts where you prefer, but some standard locations and setup procedures for each shell are: 
+
+For bash: 
 
 ```bash
-mkdir -p ~/.local/share/codeprompts-completions
-mv codeprompts-completions.<shell> ~/.local/share/codeprompts-completions/
+mkdir -p ~/.local/share/bash-completion/completions
+mv codeprompts-completion.bash ~/.local/share/bash-completion/completions
 ```
 
-2. Add the following to your shell configuration file:
+If you add it to a custom location, you'll have to source that location in your `.bashrc`.
 
-For bash (`~/.bashrc`), zsh (`~/.zshrc`), for fish (`~/.config/fish/config.fish`):
-
+For Zsh:
 ```bash
-source ~/.local/share/codeprompts-completions/codeprompts-completions.<shell>
+mkdir -p ~/.zsh/completion
+mv codeprompts-completion.zsh ~/.zsh/completion/_codeprompts
+echo 'fpath=(~/.zsh/completion $fpath)' >> ~/.zshrc
+echo 'autoload -U compinit; compinit' >> ~/.zshrc
 ```
 
-For powershell (`$PROFILE`):
+For Fish:
+```fish
+mkdir -p ~/.config/fish/completions
+mv codeprompts-completion.fish ~/.config/fish/completions/codeprompts.fish
+```
+
+If you add it to a custom location, you'll have to source that location in your `fish.config`.
+
+For PowerShell:
 ```ps1
-. ~/.local/share/codeprompts-completions/codeprompts-completions.ps1
+mkdir -p $HOME\Documents\PowerShell\Completions
+mv codeprompts-completion.ps1 $HOME\Documents\PowerShell\Completions\codeprompts.ps1
+Add-Content $PROFILE '. $HOME\Documents\PowerShell\Completions\codeprompts.ps1'
 ```
 
-Again, apply the changes: 
-
-```bash
-# For bash
-source ~/.bashrc
-
-# For zsh
-source ~/.zshrc
-
-# For Fish
-source ~/.config/fish/config.fish
-
-# For PowerShell, restart your PowerShell session
-```
+After adding installing the completions, you'll have to re-source your config files.
