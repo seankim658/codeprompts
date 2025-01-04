@@ -9,7 +9,7 @@ use serde_json::json;
 use std::io::Write;
 use std::path::PathBuf;
 
-/// Command-line arguments for the codeprompt application.
+/// Create standardized LLM prompts from your code.
 #[derive(Parser, Debug)]
 #[clap(name = "codeprompt", version = "0.1.5")]
 struct Args {
@@ -50,7 +50,7 @@ struct Args {
     diff_unstaged: bool,
 
     /// Don't display approximate token count of the genrated prompt.
-    #[arg(long, action(ArgAction::SetFalse))]
+    #[arg(long, action(ArgAction::SetTrue))]
     no_tokens: bool,
 
     /// Tokenizer to use for token count.
@@ -67,7 +67,7 @@ struct Args {
     #[arg(short = 'l', long, action(ArgAction::SetTrue))]
     no_line_numbers: bool,
 
-    /// Disable wrapping code inside markdown code blocks. Defaults to False.
+    /// Disable wrapping code inside markdown code blocks.
     #[arg(long, action(ArgAction::SetTrue))]
     no_codeblock: bool,
 
@@ -76,7 +76,7 @@ struct Args {
     relative_paths: bool,
 
     /// Disable copying to clipboard.
-    #[arg(long, action(ArgAction::SetFalse))]
+    #[arg(long, action(ArgAction::SetTrue))]
     no_clipboard: bool,
 
     /// Optional path to Handlebars template.
@@ -95,7 +95,7 @@ struct Args {
     #[arg(long)]
     issue: Option<u32>,
 
-    /// Run in verbose mode to investigate glob pattern matching. Defaults to False.
+    /// Run in verbose mode to investigate glob pattern matching.
     #[arg(long, action(ArgAction::SetTrue))]
     verbose: bool,
 }
