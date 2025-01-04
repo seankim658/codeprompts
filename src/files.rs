@@ -36,8 +36,8 @@ pub fn parse_comma_delim_patterns(patterns: &Option<String>) -> Vec<String> {
 /// - `root`: The path to the root directory.
 /// - `include`: The include patterns.
 /// - `exclude`: The exclude patterns.
-/// - `include_priority`: Whether to give priority to the include patterns.
-/// - `line_numbers`: Whether to add line numbers to the code sections.
+/// - `exclude_priority`: Whether to give priority to the exclude patterns.
+/// - `no_line_numbers`: Whether to skip adding line numbers to the code sections.
 /// - `relative_paths`: Whether to use relative paths in the file tree.
 /// - `exclude_from_tree`: Whether to exclude files picked up by the exclude patterns from the
 /// tree.
@@ -54,8 +54,8 @@ pub fn traverse_directory(
     root: &Path,
     include: &[String],
     exclude: &[String],
-    include_priority: bool,
-    line_numbers: bool,
+    exclude_priority: bool,
+    no_line_numbers: bool,
     relative_paths: bool,
     exclude_from_tree: bool,
     no_codeblock: bool,
@@ -98,7 +98,7 @@ pub fn traverse_directory(
                     // Check if the file should be excluded from the tree based on the
                     // exclude patterns and exclude_from_tree arguments. Break the path component
                     // loop if it any part of the path should be excluded.
-                    if exclude_from_tree && !include_file(path, include, exclude, include_priority, relative_paths, verbose)
+                    if exclude_from_tree && !include_file(path, include, exclude, exclude_priority, relative_paths, verbose)
                     {
                         break;
                     }
@@ -120,7 +120,7 @@ pub fn traverse_directory(
                     };
                 }
 
-                if path.is_file() && include_file(path, include, exclude, include_priority, relative_paths, verbose) {
+                if path.is_file() && include_file(path, include, exclude, exclude_priority, relative_paths, verbose) {
                     // Read in the file contents into bytes.
                     if let Ok(file_bytes) = fs::read(path) {
                         let code_string = String::from_utf8_lossy(&file_bytes);
@@ -128,7 +128,7 @@ pub fn traverse_directory(
                         let formatted_block = wrap_content(
                             &code_string,
                             path.extension().and_then(|ext| ext.to_str()).unwrap_or(""),
-                            line_numbers,
+                            no_line_numbers,
                             no_codeblock,
                         );
 
@@ -205,7 +205,7 @@ fn handle_special_case(p: &Path) -> String {
 /// - `path`: The path to the file to check.
 /// - `include_patterns`: The include patterns.
 /// - `exclude_patterns`: The exclude patterns.
-/// - `include_priority`: Whether to put precedence on the include or exclude patterns if they
+/// - `exclude_priority`: Whether to put precedence on the include or exclude patterns if they
 /// conflict.
 ///
 /// ### Returns
@@ -216,7 +216,7 @@ fn include_file(
     path: &Path,
     include: &[String],
     exclude: &[String],
-    include_priority: bool,
+    exclude_priority: bool,
     relative_paths: bool,
     verbose: bool,
 ) -> bool {
@@ -242,13 +242,16 @@ fn include_file(
     }
 
     // Function to strip "./" prefix for relative paths.
-    let strip_relative_prefix: for<'a> fn(&'a str) -> &'a str = |s| s.strip_prefix("./").unwrap_or(s);
+    let strip_relative_prefix: for<'a> fn(&'a str) -> &'a str =
+        |s| s.strip_prefix("./").unwrap_or(s);
 
     // Check the glob patterns.
     let include_bool = include.iter().any(|pattern| {
         let matches = if relative_paths {
             let stripped_pattern = strip_relative_prefix(pattern);
-            Pattern::new(stripped_pattern).unwrap().matches(relative_path_string)
+            Pattern::new(stripped_pattern)
+                .unwrap()
+                .matches(relative_path_string)
         } else {
             Pattern::new(pattern).unwrap().matches(path_string)
         };
@@ -261,7 +264,9 @@ fn include_file(
     let exclude_bool = exclude.iter().any(|pattern| {
         let matches = if relative_paths {
             let stripped_pattern = strip_relative_prefix(pattern);
-            Pattern::new(stripped_pattern).unwrap().matches(relative_path_string)
+            Pattern::new(stripped_pattern)
+                .unwrap()
+                .matches(relative_path_string)
         } else {
             Pattern::new(pattern).unwrap().matches(path_string)
         };
@@ -275,9 +280,9 @@ fn include_file(
     let result = match (include_bool, exclude_bool) {
         (true, true) => {
             if verbose {
-                println!("\tMatch conflict, include priority: {}", include_priority);
+                println!("\tMatch conflict, exclude priority: {}", exclude_priority);
             }
-            include_priority
+            !exclude_priority
         }
         (true, false) => {
             if verbose {
@@ -311,18 +316,18 @@ fn include_file(
 ///
 /// - `content`: The content to wrap.
 /// - `extension`: The file extension.
-/// - `line_numbers`: Whether to add line numbers.
+/// - `no_line_numbers`: Whether to skip adding line numbers.
 /// - `no_codeblock`: Whether to wrap the file content or not.
 ///
 /// ### Returns
 ///
 /// - `String`: The formatted file content.
 ///
-fn wrap_content(content: &str, extension: &str, line_numbers: bool, no_codeblock: bool) -> String {
+fn wrap_content(content: &str, extension: &str, no_line_numbers: bool, no_codeblock: bool) -> String {
     let codeblock_tick = "`".repeat(3);
     let mut formatted_block = String::new();
 
-    if line_numbers {
+    if !no_line_numbers {
         for (idx, line) in content.lines().enumerate() {
             formatted_block.push_str(&format!("{:4} | {}\n", idx + 1, line));
         }

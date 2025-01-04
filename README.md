@@ -1,6 +1,6 @@
 # Code Prompts
 
-Command line tool for creating LLM prompts from your code using [Handlebars](https://handlebarsjs.com/) templates. API documentation can be found [here](https://seankim658.github.io/codeprompts/codeprompt/index.html). The best results are using this tool with Claude 3.5.
+Command line tool for creating LLM prompts from your code using [Handlebars](https://handlebarsjs.com/) templates. 
 
 This was a project to brush up on Rust and is based on [code2prompt](https://github.com/mufeedvh/code2prompt) with some additional functionality that I found useful.
 
@@ -14,8 +14,6 @@ This was a project to brush up on Rust and is based on [code2prompt](https://git
 - [Usage Guides](./docs/README.md)
 
 ---
-
-:star: New in `v0.1.5`: Tab completions are now supported!
 
 ## Why Code Prompts?
 
@@ -65,7 +63,8 @@ More detailed usage guides can be found [here](./docs/README.md).
 More extensive documentation on the options can be found [here](./docs/options.md). The code prompts command line tool has the following arguments:
 
 ```txt
-Command-line arguments for the codeprompt application
+
+Create standardized LLM prompts from your code
 
 Usage: codeprompt [OPTIONS] [PATH] [COMMAND]
 
@@ -74,81 +73,35 @@ Commands:
   help        Print this message or the help of the given subcommand(s)
 
 Arguments:
-  [PATH]
-          Path to project directory
+  [PATH]  Path to project directory
 
 Options:
-      --include <INCLUDE>
-          Glob patterns to include
-
-      --exclude <EXCLUDE>
-          Glob patterns to exclude
-
-      --include-priority
-          Pattern priority in case of conflict (True to prioritize Include pattern, False to prioritize exclude pattern). Defaults to True
-
-      --exclude-from-tree
-          Whether to exclude files/folders from the source tree based on exclude patterns. Defaults to False
-
-      --gitignore
-          Whether to respect the .gitignore file. Defaults to True
-
-  -d, --diff-staged
-          Whether to capture the git diff for staged changes only (equivalent to running `git diff --cached` or `git diff --staged`. Defaults to False
-
-  -u, --diff-unstaged
-          Whether to capture the git diff for unstaged changes only (equivalent to running `git diff`). Defaults to False
-
-      --tokens
-          Display approximate token count of the genrated prompt. Defaults to True
-
-  -c, --encoding <ENCODING>
-          Tokenizer to use for token count.
-
-          Right now cl100k is the only supported tokenizer.
-
-          [default: cl100k]
-
-  -o, --output <OUTPUT>
-          Redirect output to file
-
-  -l, --line-numbers
-          Toggle line numbers to source code. Defaults to True
-
-      --no-codeblock
-          Disable wrapping code inside markdown code blocks. Defaults to False
-
-      --relative-paths
-          Use relative paths instead of absolute paths, including parent directory. Defaults to True
-
-      --no-clipboard
-          Disable copying to clipboard. Defaults to False
-
-  -t, --template <TEMPLATE>
-          Optional path to Handlebars template
-
-      --spinner
-          Whether to render the spinner (incurs some overhead but is nice to look at). Defaults to True
-
-      --json
-          Whether to print the output as JSON. Defaults to False
-
-      --issue <ISSUE>
-          Fetch a specific Github issue for the repository
-
-      --verbose
-          Run in verbose mode to investigate glob pattern matching. Defaults to False
-
-  -h, --help
-          Print help (see a summary with '-h')
-
-  -V, --version
-          Print version
+      --include <INCLUDE>    Glob patterns to include
+      --exclude <EXCLUDE>    Glob patterns to exclude
+      --exclude-priority     Change pattern priority in case of conflict to prioritize the exclusion pattern
+      --exclude-from-tree    Eclude files/folders from the source tree based on exclude patterns
+      --gitignore            Don't respect .gitignore file
+  -d, --diff-staged          Capture the git diff for staged changes only (equivalent to running `git diff --cached` or `git diff --staged`
+  -u, --diff-unstaged        Capture the git diff for unstaged changes only (equivalent to running `git diff`)
+      --no-tokens            Don't display approximate token count of the genrated prompt
+  -c, --encoding <ENCODING>  Tokenizer to use for token count [default: cl100k]
+  -o, --output <OUTPUT>      Redirect output to file
+  -l, --no-line-numbers      Turn off line numbers in source code blocks
+      --no-codeblock         Disable wrapping code inside markdown code blocks
+      --relative-paths       Use relative paths instead of absolute paths, including parent directory
+      --no-clipboard         Disable copying to clipboard
+  -t, --template <TEMPLATE>  Optional path to Handlebars template
+      --no-spinner           Whether to render the spinner
+      --json                 Whether to print the output as JSON. Defaults to False
+      --issue <ISSUE>        Fetch a specific Github issue for the repository
+      --verbose              Run in verbose mode to investigate glob pattern matching
+  -h, --help                 Print help (see more with '--help')
+  -V, --version              Print version
 ```
 
 ## Templates
 
-The templates use a simple templating language called [Handlebars](https://handlebarsjs.com/guide/). For this project, the Handlebars templates are used to generate markdown.
+The templates use a simple templating language called [Handlebars](https://handlebarsjs.com/guide/).
 
 The pre-defined templates can be downloaded from the project [releases](https://github.com/seankim658/codeprompts/releases). Download the `templates.zip`.
 

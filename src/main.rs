@@ -9,7 +9,7 @@ use serde_json::json;
 use std::io::Write;
 use std::path::PathBuf;
 
-/// Command-line arguments for the codeprompt application.
+/// Create standardized LLM prompts from your code.
 #[derive(Parser, Debug)]
 #[clap(name = "codeprompt", version = "0.1.5")]
 struct Args {
@@ -29,31 +29,29 @@ struct Args {
     #[arg(long)]
     exclude: Option<String>,
 
-    /// Pattern priority in case of conflict (True to prioritize Include pattern, False to
-    /// prioritize exclude pattern). Defaults to True.
+    /// Change pattern priority in case of conflict to prioritize the exclusion pattern.
     #[arg(long, action(ArgAction::SetFalse))]
-    include_priority: bool,
+    exclude_priority: bool,
 
-    /// Whether to exclude files/folders from the source tree based on exclude patterns. Defaults
-    /// to False.
+    /// Eclude files/folders from the source tree based on exclude patterns.
     #[arg(long, action(ArgAction::SetTrue))]
     exclude_from_tree: bool,
 
-    /// Whether to respect the .gitignore file. Defaults to True.
+    /// Don't respect .gitignore file.
     #[arg(long, action(ArgAction::SetFalse))]
     gitignore: bool,
 
-    /// Whether to capture the git diff for staged changes only (equivalent to running `git diff --cached` or `git diff --staged`. Defaults to False.
+    /// Capture the git diff for staged changes only (equivalent to running `git diff --cached` or `git diff --staged`.
     #[arg(short = 'd', long, action(ArgAction::SetTrue))]
     diff_staged: bool,
 
-    /// Whether to capture the git diff for unstaged changes only (equivalent to running `git diff`). Defaults to False.
+    /// Capture the git diff for unstaged changes only (equivalent to running `git diff`).
     #[arg(short = 'u', long, action(ArgAction::SetTrue))]
     diff_unstaged: bool,
 
-    /// Display approximate token count of the genrated prompt. Defaults to True.
-    #[arg(long, action(ArgAction::SetFalse))]
-    tokens: bool,
+    /// Don't display approximate token count of the genrated prompt.
+    #[arg(long, action(ArgAction::SetTrue))]
+    no_tokens: bool,
 
     /// Tokenizer to use for token count.
     ///
@@ -65,19 +63,19 @@ struct Args {
     #[arg(short = 'o', long)]
     output: Option<String>,
 
-    /// Toggle line numbers to source code. Defaults to True.
-    #[arg(short = 'l', long, action(ArgAction::SetFalse))]
-    line_numbers: bool,
+    /// Turn off line numbers in source code blocks.
+    #[arg(short = 'l', long, action(ArgAction::SetTrue))]
+    no_line_numbers: bool,
 
-    /// Disable wrapping code inside markdown code blocks. Defaults to False.
+    /// Disable wrapping code inside markdown code blocks.
     #[arg(long, action(ArgAction::SetTrue))]
     no_codeblock: bool,
 
-    /// Use relative paths instead of absolute paths, including parent directory. Defaults to True.
+    /// Use relative paths instead of absolute paths, including parent directory.
     #[arg(long, action(ArgAction::SetFalse))]
     relative_paths: bool,
 
-    /// Disable copying to clipboard. Defaults to False.
+    /// Disable copying to clipboard.
     #[arg(long, action(ArgAction::SetTrue))]
     no_clipboard: bool,
 
@@ -85,10 +83,9 @@ struct Args {
     #[arg(short = 't', long)]
     template: Option<PathBuf>,
 
-    /// Whether to render the spinner (incurs some overhead but is nice to look at). Defaults to
-    /// True.
-    #[arg(long, action(ArgAction::SetFalse))]
-    spinner: bool,
+    /// Whether to render the spinner.
+    #[arg(long, action(ArgAction::SetTrue))]
+    no_spinner: bool,
 
     /// Whether to print the output as JSON. Defaults to False.
     #[arg(long, action(ArgAction::SetTrue))]
@@ -98,7 +95,7 @@ struct Args {
     #[arg(long)]
     issue: Option<u32>,
 
-    /// Run in verbose mode to investigate glob pattern matching. Defaults to False.
+    /// Run in verbose mode to investigate glob pattern matching.
     #[arg(long, action(ArgAction::SetTrue))]
     verbose: bool,
 }
@@ -152,7 +149,7 @@ async fn main() -> Result<(), Error> {
     let (template, template_name) = get_template(&args.template)?;
     let handlebars = setup_handlebars_registry(&template, template_name)?;
 
-    let spinner = if args.spinner {
+    let spinner = if !args.no_spinner {
         Some(setup_spinner("Building directory tree..."))
     } else {
         None
@@ -165,8 +162,8 @@ async fn main() -> Result<(), Error> {
         &project_root,
         &include_patterns,
         &exclude_patterns,
-        args.include_priority,
-        args.line_numbers,
+        args.exclude_priority,
+        args.no_line_numbers,
         args.relative_paths,
         args.exclude_from_tree,
         args.no_codeblock,
@@ -271,7 +268,7 @@ async fn main() -> Result<(), Error> {
 
     let rendered_output = render_template(&handlebars, template_name, &json_data)?;
 
-    let tokens = if args.tokens {
+    let tokens = if !args.no_tokens {
         let bpe = tokenizer_init(&args.encoding);
         bpe.encode_with_special_tokens(&rendered_output).len()
     } else {
@@ -293,7 +290,7 @@ async fn main() -> Result<(), Error> {
         println!("{}", serde_json::to_string_pretty(&json_output)?);
         return Ok(());
     } else {
-        if args.tokens {
+        if !args.no_tokens {
             println!(
                 "\n{}{}{} Token count: {}",
                 "[".bold().white(),
