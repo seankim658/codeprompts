@@ -205,7 +205,7 @@ fn handle_special_case(p: &Path) -> String {
 /// - `path`: The path to the file to check.
 /// - `include_patterns`: The include patterns.
 /// - `exclude_patterns`: The exclude patterns.
-/// - `include_priority`: Whether to put precedence on the include or exclude patterns if they
+/// - `exclude_priority`: Whether to put precedence on the include or exclude patterns if they
 /// conflict.
 ///
 /// ### Returns
@@ -216,7 +216,7 @@ fn include_file(
     path: &Path,
     include: &[String],
     exclude: &[String],
-    include_priority: bool,
+    exclude_priority: bool,
     relative_paths: bool,
     verbose: bool,
 ) -> bool {
@@ -280,9 +280,9 @@ fn include_file(
     let result = match (include_bool, exclude_bool) {
         (true, true) => {
             if verbose {
-                println!("\tMatch conflict, include priority: {}", include_priority);
+                println!("\tMatch conflict, exclude priority: {}", exclude_priority);
             }
-            include_priority
+            !exclude_priority
         }
         (true, false) => {
             if verbose {
