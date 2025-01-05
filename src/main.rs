@@ -3,6 +3,7 @@ use arboard::Clipboard;
 use clap::{ArgAction, Command, CommandFactory, Parser, Subcommand};
 use clap_complete::{generate, Generator, Shell};
 use codeprompt::prelude::*;
+use codeprompt::logging;
 use colored::*;
 use git2::Repository;
 use serde_json::json;
@@ -122,6 +123,8 @@ fn print_completions<G: Generator>(gen: G, cmd: &mut Command) {
 async fn main() -> Result<(), Error> {
     let args = Args::parse();
 
+    logging::setup(args.verbose);
+
     let project_root = match &args.subcommand {
         Some(SubCommand::Completion { shell }) => {
             let mut cmd = Args::command();
@@ -168,7 +171,6 @@ async fn main() -> Result<(), Error> {
         args.exclude_from_tree,
         args.no_codeblock,
         args.gitignore,
-        args.verbose,
     );
 
     let (tree, files) = match tree_data {

@@ -9,6 +9,7 @@ use serde_json::json;
 use std::fs;
 use std::path::Path;
 use termtree::Tree;
+use tracing::debug;
 
 /// Parses a comma-delimited list from the user arguments.
 ///
@@ -60,8 +61,13 @@ pub fn traverse_directory(
     exclude_from_tree: bool,
     no_codeblock: bool,
     gitignore: bool,
-    verbose: bool,
 ) -> Result<(String, Vec<serde_json::Value>)> {
+    debug!(
+        include_patterns = ?include,
+        exclude_patterns = ?exclude,
+        "Starting directory traversal"
+    );
+
     // Will hold the files found in the traversal.
     let mut files = Vec::new();
     // Canonicalize returns the canonical, absolute form of a path with all intermediate components
@@ -69,13 +75,6 @@ pub fn traverse_directory(
     // component in path is not a directory.
     let canonical_root_path = root.canonicalize()?;
     let parent_dir = basename(&canonical_root_path);
-
-    if verbose {
-        println!(
-            "Include patterns: {:?}\nExclude patterns: {:?}",
-            include, exclude
-        );
-    }
 
     // Walk through the directory tree.
     // Initialize a WalkBuilder with the canonical root path (by default, respects .gitignore).
@@ -98,7 +97,7 @@ pub fn traverse_directory(
                     // Check if the file should be excluded from the tree based on the
                     // exclude patterns and exclude_from_tree arguments. Break the path component
                     // loop if it any part of the path should be excluded.
-                    if exclude_from_tree && !include_file(path, include, exclude, exclude_priority, relative_paths, verbose)
+                    if exclude_from_tree && !include_file(path, include, exclude, exclude_priority, relative_paths)
                     {
                         break;
                     }
@@ -120,7 +119,7 @@ pub fn traverse_directory(
                     };
                 }
 
-                if path.is_file() && include_file(path, include, exclude, exclude_priority, relative_paths, verbose) {
+                if path.is_file() && include_file(path, include, exclude, exclude_priority, relative_paths) {
                     // Read in the file contents into bytes.
                     if let Ok(file_bytes) = fs::read(path) {
                         let code_string = String::from_utf8_lossy(&file_bytes);
@@ -218,12 +217,11 @@ fn include_file(
     exclude: &[String],
     exclude_priority: bool,
     relative_paths: bool,
-    verbose: bool,
 ) -> bool {
     let canonical_root_path = match fs::canonicalize(path) {
         Ok(path) => path,
         Err(e) => {
-            println!("Failed to canonicalize path: {}", e);
+            eprintln!("Failed to canonicalize path: {}", e);
             return false;
         }
     };
@@ -233,13 +231,14 @@ fn include_file(
         .unwrap_or(path);
     let relative_path_string = relative_path.to_str().unwrap();
 
-    if verbose {
-        if relative_paths {
-            println!("=> Target path: {}", relative_path_string);
+    debug!(
+        path = if relative_paths {
+            relative_path_string
         } else {
-            println!("=> Target path: {}", path_string);
-        }
-    }
+            path_string
+        },
+        "processing file"
+    );
 
     // Function to strip "./" prefix for relative paths.
     let strip_relative_prefix: for<'a> fn(&'a str) -> &'a str =
@@ -255,9 +254,11 @@ fn include_file(
         } else {
             Pattern::new(pattern).unwrap().matches(path_string)
         };
-        if verbose {
-            println!("\tChecking include pattern '{}': {}", pattern, matches);
-        }
+        debug!(
+            pattern = pattern,
+            matches = matches,
+            "Checking include pattern"
+        );
         matches
     });
 
@@ -270,39 +271,41 @@ fn include_file(
         } else {
             Pattern::new(pattern).unwrap().matches(path_string)
         };
-        if verbose {
-            println!("\tChecking exclude pattern '{}': {}", pattern, matches);
-        }
+        debug!(
+            pattern = pattern,
+            matches = matches,
+            "Checking exclude pattern"
+        );
         matches
     });
 
     // Determine if the file should be included.
     let result = match (include_bool, exclude_bool) {
         (true, true) => {
-            if verbose {
-                println!("\tMatch conflict, exclude priority: {}", exclude_priority);
-            }
-            !exclude_priority
+            debug!(
+                exclude_priority = exclude_priority,
+                result = if exclude_priority {
+                    "excluding"
+                } else {
+                    "including"
+                },
+                "Pattern match conflict"
+            );
+            exclude_priority
         }
         (true, false) => {
-            if verbose {
-                println!("\tInclude: true");
-            }
+            debug!("File included by pattern match");
             true
         }
         (false, true) => {
-            if verbose {
-                println!("\tInclude: false");
-            }
+            debug!("File excluded by pattern match");
             false
         }
         (false, false) => {
-            if verbose {
-                println!(
-                    "\tNot in either condition, fallback: {}",
-                    include.is_empty()
-                );
-            }
+            debug!(
+                fallback = include.is_empty(),
+                "No pattern matches, using fallback"
+            );
             include.is_empty()
         }
     };
@@ -323,7 +326,12 @@ fn include_file(
 ///
 /// - `String`: The formatted file content.
 ///
-fn wrap_content(content: &str, extension: &str, no_line_numbers: bool, no_codeblock: bool) -> String {
+fn wrap_content(
+    content: &str,
+    extension: &str,
+    no_line_numbers: bool,
+    no_codeblock: bool,
+) -> String {
     let codeblock_tick = "`".repeat(3);
     let mut formatted_block = String::new();
 
