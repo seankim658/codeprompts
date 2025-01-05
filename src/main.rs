@@ -2,8 +2,10 @@ use anyhow::{Context, Error, Result};
 use arboard::Clipboard;
 use clap::{ArgAction, Command, CommandFactory, Parser, Subcommand};
 use clap_complete::{generate, Generator, Shell};
-use codeprompt::prelude::*;
 use codeprompt::logging;
+use codeprompt::prelude::*;
+use codeprompt::validation::validate_token_count;
+use codeprompt::validation::ValidationConfig;
 use colored::*;
 use git2::Repository;
 use serde_json::json;
@@ -149,6 +151,20 @@ async fn main() -> Result<(), Error> {
         }
     };
 
+    let validation_config = ValidationConfig::new(
+        args.diff_staged,
+        args.diff_unstaged,
+        args.issue,
+        &args.template,
+    );
+    // Check for git repo first since it will exit if not found
+    if let Err(error) = validation_config.validate_git_repo(&project_root) {
+        eprintln!("{}", error.format());
+        std::process::exit(1);
+    }
+    // Get other warnings
+    let mut warnings = validation_config.validate();
+
     let (template, template_name) = get_template(&args.template)?;
     let handlebars = setup_handlebars_registry(&template, template_name)?;
 
@@ -277,6 +293,11 @@ async fn main() -> Result<(), Error> {
         0
     };
 
+    // Add token count warning if needed
+    if let Some(warning) = validate_token_count(tokens) {
+        warnings.push(warning);
+    }
+
     let paths: Vec<String> = files
         .iter()
         .filter_map(|f| f.get("path").and_then(|p| p.as_str()).map(|s| s.to_owned()))
@@ -309,6 +330,13 @@ async fn main() -> Result<(), Error> {
 
     if let Some(output_path) = &args.output {
         write_output_file(output_path, &rendered_output)?;
+    }
+
+    // Print warnings if needed
+    if !warnings.is_empty() {
+        for warning in warnings {
+            eprintln!("{}", warning.format());
+        }
     }
 
     Ok(())
