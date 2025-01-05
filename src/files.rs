@@ -2,14 +2,17 @@
 //!
 //! Module that handles all file and file pathing functionality.
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use glob::Pattern;
 use ignore::WalkBuilder;
 use serde_json::json;
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 use termtree::Tree;
 use tracing::debug;
+
+const CODE_BLOCK_TICKS: &str = "```";
 
 /// Parses a comma-delimited list from the user arguments.
 ///
@@ -76,6 +79,10 @@ pub fn traverse_directory(
     let canonical_root_path = root.canonicalize()?;
     let parent_dir = basename(&canonical_root_path);
 
+    // Compile glob patterns
+    let include_patterns = compile_patterns(include)?;
+    let exclude_patterns = compile_patterns(exclude)?;
+
     // Walk through the directory tree.
     // Initialize a WalkBuilder with the canonical root path (by default, respects .gitignore).
     let tree = WalkBuilder::new(&canonical_root_path)
@@ -97,7 +104,7 @@ pub fn traverse_directory(
                     // Check if the file should be excluded from the tree based on the
                     // exclude patterns and exclude_from_tree arguments. Break the path component
                     // loop if it any part of the path should be excluded.
-                    if exclude_from_tree && !include_file(path, include, exclude, exclude_priority, relative_paths)
+                    if exclude_from_tree && !include_file(path, &include_patterns, &exclude_patterns, exclude_priority, relative_paths)
                     {
                         break;
                     }
@@ -119,7 +126,7 @@ pub fn traverse_directory(
                     };
                 }
 
-                if path.is_file() && include_file(path, include, exclude, exclude_priority, relative_paths) {
+                if path.is_file() && include_file(path, &include_patterns, &exclude_patterns, exclude_priority, relative_paths) {
                     // Read in the file contents into bytes.
                     if let Ok(file_bytes) = fs::read(path) {
                         let code_string = String::from_utf8_lossy(&file_bytes);
@@ -202,10 +209,11 @@ fn handle_special_case(p: &Path) -> String {
 /// ### Arguments
 ///
 /// - `path`: The path to the file to check.
-/// - `include_patterns`: The include patterns.
-/// - `exclude_patterns`: The exclude patterns.
+/// - `include_patterns`: The pre-compiled include patterns.
+/// - `exclude_patterns`: The pre-compiled exclude patterns.
 /// - `exclude_priority`: Whether to put precedence on the include or exclude patterns if they
 /// conflict.
+/// - `relative_paths`: Whether to use relative paths for each file included.
 ///
 /// ### Returns
 ///
@@ -213,8 +221,8 @@ fn handle_special_case(p: &Path) -> String {
 ///
 fn include_file(
     path: &Path,
-    include: &[String],
-    exclude: &[String],
+    include_patterns: &HashSet<Pattern>,
+    exclude_patterns: &HashSet<Pattern>,
     exclude_priority: bool,
     relative_paths: bool,
 ) -> bool {
@@ -231,6 +239,7 @@ fn include_file(
         .unwrap_or(path);
     let relative_path_string = relative_path.to_str().unwrap();
 
+    debug!("----------------------------------------------------------------");
     debug!(
         path = if relative_paths {
             relative_path_string
@@ -245,39 +254,35 @@ fn include_file(
         |s| s.strip_prefix("./").unwrap_or(s);
 
     // Check the glob patterns.
-    let include_bool = include.iter().any(|pattern| {
-        let matches = if relative_paths {
-            let stripped_pattern = strip_relative_prefix(pattern);
-            Pattern::new(stripped_pattern)
-                .unwrap()
-                .matches(relative_path_string)
-        } else {
-            Pattern::new(pattern).unwrap().matches(path_string)
-        };
-        debug!(
-            pattern = pattern,
-            matches = matches,
-            "Checking include pattern"
-        );
+    let include_bool = if relative_paths {
+        let stripped_path = strip_relative_prefix(relative_path_string);
+        let matches = include_patterns
+            .iter()
+            .any(|pattern| pattern.matches(stripped_path));
+        debug!(patterns = ?include_patterns, matches = matches, "Checking include patterns");
         matches
-    });
+    } else {
+        let matches = include_patterns
+            .iter()
+            .any(|pattern| pattern.matches(path_string));
+        debug!(patterns = ?include_patterns, matches = matches, "Checking include patterns");
+        matches
+    };
 
-    let exclude_bool = exclude.iter().any(|pattern| {
-        let matches = if relative_paths {
-            let stripped_pattern = strip_relative_prefix(pattern);
-            Pattern::new(stripped_pattern)
-                .unwrap()
-                .matches(relative_path_string)
-        } else {
-            Pattern::new(pattern).unwrap().matches(path_string)
-        };
-        debug!(
-            pattern = pattern,
-            matches = matches,
-            "Checking exclude pattern"
-        );
+    let exclude_bool = if relative_paths {
+        let stripped_path = strip_relative_prefix(relative_path_string);
+        let matches = exclude_patterns
+            .iter()
+            .any(|pattern| pattern.matches(stripped_path));
+        debug!(patterns = ?exclude_patterns, matches = matches, "Checking exclude patterns");
         matches
-    });
+    } else {
+        let matches = exclude_patterns
+            .iter()
+            .any(|pattern| pattern.matches(path_string));
+        debug!(patterns = ?exclude_patterns, matches = matches, "Checking exclude patterns");
+        matches
+    };
 
     // Determine if the file should be included.
     let result = match (include_bool, exclude_bool) {
@@ -291,7 +296,7 @@ fn include_file(
                 },
                 "Pattern match conflict"
             );
-            exclude_priority
+            !exclude_priority
         }
         (true, false) => {
             debug!("File included by pattern match");
@@ -303,10 +308,10 @@ fn include_file(
         }
         (false, false) => {
             debug!(
-                fallback = include.is_empty(),
+                fallback = include_patterns.is_empty(),
                 "No pattern matches, using fallback"
             );
-            include.is_empty()
+            include_patterns.is_empty()
         }
     };
 
@@ -332,7 +337,6 @@ fn wrap_content(
     no_line_numbers: bool,
     no_codeblock: bool,
 ) -> String {
-    let codeblock_tick = "`".repeat(3);
     let mut formatted_block = String::new();
 
     if !no_line_numbers {
@@ -346,9 +350,25 @@ fn wrap_content(
     if no_codeblock {
         formatted_block
     } else {
-        format!(
-            "{}{}\n{}\n{}",
-            codeblock_tick, extension, formatted_block, codeblock_tick
-        )
+        let mut result = String::with_capacity(
+            formatted_block.len() + CODE_BLOCK_TICKS.len() * 2 + extension.len() + 2,
+        );
+        result.push_str(CODE_BLOCK_TICKS);
+        result.push_str(extension);
+        result.push_str("\n");
+        result.push_str(&formatted_block);
+        result.push_str(CODE_BLOCK_TICKS);
+        result
     }
+}
+
+/// Compiles glob paterns into a reusable set.
+fn compile_patterns(patterns: &[String]) -> Result<HashSet<Pattern>> {
+    patterns
+        .iter()
+        .map(|p| {
+            let normalized = p.strip_prefix("./").unwrap_or(p);
+            Pattern::new(normalized).map_err(|e| anyhow!("Invalid pattern {}: {}", p, e))
+        })
+        .collect()
 }
