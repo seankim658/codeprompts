@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["TOKEN_WARNING_THRESHOLD"],"enum":["ValidationError","ValidationWarning"],"fn":["validate_token_count"],"struct":["ValidationConfig"]};
