@@ -12,6 +12,7 @@ pub mod git;
 pub mod spinner;
 pub mod template;
 pub mod tokenizer;
+pub mod logging;
 
 pub mod prelude {
     //! Easy import prelude module.
