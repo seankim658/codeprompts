@@ -296,7 +296,7 @@ fn include_file(
                 },
                 "Pattern match conflict"
             );
-            exclude_priority
+            !exclude_priority
         }
         (true, false) => {
             debug!("File included by pattern match");
