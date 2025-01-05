@@ -12,6 +12,8 @@ use std::path::Path;
 use termtree::Tree;
 use tracing::debug;
 
+const CODE_BLOCK_TICKS: &str = "```";
+
 /// Parses a comma-delimited list from the user arguments.
 ///
 /// ### Arguments
@@ -334,7 +336,6 @@ fn wrap_content(
     no_line_numbers: bool,
     no_codeblock: bool,
 ) -> String {
-    let codeblock_tick = "`".repeat(3);
     let mut formatted_block = String::new();
 
     if !no_line_numbers {
@@ -348,10 +349,15 @@ fn wrap_content(
     if no_codeblock {
         formatted_block
     } else {
-        format!(
-            "{}{}\n{}\n{}",
-            codeblock_tick, extension, formatted_block, codeblock_tick
-        )
+        let mut result = String::with_capacity(
+            formatted_block.len() + CODE_BLOCK_TICKS.len() * 2 + extension.len() + 2,
+        );
+        result.push_str(CODE_BLOCK_TICKS);
+        result.push_str(extension);
+        result.push_str("\n");
+        result.push_str(&formatted_block);
+        result.push_str(CODE_BLOCK_TICKS);
+        result
     }
 }
 
