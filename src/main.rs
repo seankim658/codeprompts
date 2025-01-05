@@ -14,7 +14,7 @@ use std::path::PathBuf;
 
 /// Create standardized LLM prompts from your code.
 #[derive(Parser, Debug)]
-#[clap(name = "codeprompt", version = "0.1.5")]
+#[clap(name = "codeprompt", version = "0.1.6")]
 struct Args {
     /// Subcommand for shell completion generation.
     #[command(subcommand)]
