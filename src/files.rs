@@ -239,6 +239,7 @@ fn include_file(
         .unwrap_or(path);
     let relative_path_string = relative_path.to_str().unwrap();
 
+    debug!("----------------------------------------------------------------");
     debug!(
         path = if relative_paths {
             relative_path_string
@@ -365,6 +366,9 @@ fn wrap_content(
 fn compile_patterns(patterns: &[String]) -> Result<HashSet<Pattern>> {
     patterns
         .iter()
-        .map(|p| Pattern::new(p).map_err(|e| anyhow!("Invalid pattern {}: {}", p, e)))
+        .map(|p| {
+            let normalized = p.strip_prefix("./").unwrap_or(p);
+            Pattern::new(normalized).map_err(|e| anyhow!("Invalid pattern {}: {}", p, e))
+        })
         .collect()
 }
