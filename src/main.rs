@@ -30,7 +30,7 @@ struct Args {
     exclude: Option<String>,
 
     /// Change pattern priority in case of conflict to prioritize the exclusion pattern.
-    #[arg(long, action(ArgAction::SetFalse))]
+    #[arg(long, action(ArgAction::SetTrue))]
     exclude_priority: bool,
 
     /// Eclude files/folders from the source tree based on exclude patterns.
