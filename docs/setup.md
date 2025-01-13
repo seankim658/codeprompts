@@ -1,6 +1,6 @@
 # Setup
 
-This guide will help you install Codeprompts, set it up to run easily, and configure shell completions.
+This guide will help you install codeprompts, set it up to run easily, and configure shell completions.
 
 - [Installation](#installation)
 - [Running the Tool](#running-the-tool)

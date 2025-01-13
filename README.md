@@ -1,10 +1,11 @@
 # Code Prompts
 
-Command line tool for creating LLM prompts from your code using [Handlebars](https://handlebarsjs.com/) templates. 
+Command line (and TUI) tool for creating LLM prompts from your code using [Handlebars](https://handlebarsjs.com/) templates.
 
 This was a project to brush up on Rust and is based on [code2prompt](https://github.com/mufeedvh/code2prompt) with some additional functionality that I found useful.
 
 - [Why Code Prompts?](#why-code-prompts)
+- [Terminal User Interface](#terminal-user-interface)
 - [Installation](#installation)
   - [Release Binary](#release-binary)
   - [Building From Source](#building-from-source)
@@ -22,6 +23,7 @@ Manually copy and pasting code and code snippets to LLMs has several issues:
 1. **You lose formatting and structure**. For a language like Python that uses whitespace, the formatting and structure of the code is important for the LLM to accurately and comprehensively understand the code for your request.
 2. **You lose context**. In order for the LLM to provide the best responses, it requires the context from all of your code. This includes your code snippet's dependencies, other user defined modules/objects, and other scope variables and concepts.
 3. **You lose prompt standardization**: If you are using LLMs to perform repeated tasks like documenting code, you have to make sure that your documentation styling guidelines are consistent across every request.
+4. **Line numbers!**: On large inputs, LLMs tend to provide code changes to precise lines, making it difficult to pin down exactly where to apply/review the changes proposed. Line numbers help alleviate this for better code provenance.
 
 To get the most out of LLMs, prompting has to be clear, comprehensive, and consistent. How code prompts fixes these issues:
 
@@ -29,13 +31,24 @@ To get the most out of LLMs, prompting has to be clear, comprehensive, and consi
 2. The complete context required for understanding the code is enclosed in a standardized format. This includes the project directory tree and file pathing.
 3. By using Handlebar templates, the prompts will be comprehensive and consistent. If your preferred style guide and/or coding practices are updated in the future, there is no need to remember to update all future manually typed prompts. Instead, just update the target Handlebars template once.
 
+## Terminal User Interface
+
+![TUI](./imgs/tui.png)
+
+The project also includes an optional TUI wrapper where you can provide a [config file](./docs/tui_config_file.md) to override various flags and see how the command is structured before running it.
+
 ## Installation
 
-To download and use the code prompts command-line tool, you have two options: you can download the release binary or compile from source. For more detailed steps, including setting up tab completions, see the [setup](/docs/setup.md) guide.
+To download and use the codeprompts command-line tool, you have two options: you can download the release binary or compile from source. For more detailed steps, including setting up tab completions, see the [setup](/docs/setup.md) guide.
 
 ### Release Binary
 
 To download a release binary, go to the [releases](https://github.com/seankim658/codeprompts/releases) and download the binary for your OS.
+
+**Note**: In order to use the TUI binary, you will have to add the CLI binary to your path and either:
+
+- Rename the CLI release binary to `codeprompt` 
+- Update the config file for the command to run the CLI binary
 
 ### Building From Source
 

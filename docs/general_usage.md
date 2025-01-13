@@ -1,6 +1,6 @@
-# General Usage
+# CLI General Usage
 
-*Note*: Assumes the executable was built from source so it is just named `codeprompt`.
+**Note**: Assumes the executable was built from source so it is just named `codeprompt`.
 
 If I wanted to use the default template and generate the codeprompt for the `main.rs` file, I would do something like this:
 
