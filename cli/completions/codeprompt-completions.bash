@@ -31,7 +31,7 @@ _codeprompt() {
 
     case "${cmd}" in
         codeprompt)
-            opts="-d -u -c -o -l -t -h -V --include --exclude --include-priority --exclude-from-tree --gitignore --diff-staged --diff-unstaged --tokens --encoding --output --line-numbers --no-codeblock --relative-paths --no-clipboard --template --spinner --json --issue --verbose --help --version [PATH] completion help"
+            opts="-d -u -c -o -l -t -h -V --include --exclude --exclude-priority --exclude-from-tree --gitignore --diff-staged --diff-unstaged --no-tokens --encoding --output --no-line-numbers --no-codeblock --relative-paths --no-clipboard --template --no-spinner --json --issue --verbose --help --version [PATH] completion help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

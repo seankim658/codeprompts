@@ -1,0 +1,17 @@
+template_dir = "~/projects/personal/codeprompts/cli/src/templates/"
+
+[defaults]
+# Give precedence to exclude patterns over include patterns when they conflict
+exclude_priority = false
+# Exclude files/folders from the source tree based on exclude patterns
+exclude_from_tree = false
+# Whether to respect the .gitignore file
+diff_staged = false
+diff_unstaged = false
+gitignore = true
+no_tokens = false
+no_line_numbers = false
+no_codeblock = false
+relative_paths = false
+no_clipboard = false
+no_spinner = false
