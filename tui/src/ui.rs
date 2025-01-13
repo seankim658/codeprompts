@@ -5,7 +5,7 @@ use ratatui::text::Line;
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 use ratatui::Frame;
 
-const BUTTON_LABELS: [&str; 4] = ["Run", "Submit", "Reset", "Exit"];
+const BUTTON_LABELS: [&str; 4] = ["Run", "Print", "Reset", "Exit"];
 
 pub fn draw(
     frame: &mut Frame,

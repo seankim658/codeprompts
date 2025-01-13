@@ -8,15 +8,13 @@ fn main() -> Result<()> {
     let mut app = App::new(config)?;
     if let Some(cmd) = app.run()? {
         if cmd.starts_with('!') {
-            let cmd = &cmd[1..];
-            Command::new("bash")
-                .arg("-c")
-                .arg(format!("echo '{}' > /dev/tty; stty sane", cmd))
-                .spawn()?
-                .wait()?;
+            println!("{}", &cmd[1..]);
         } else {
-            let parts: Vec<_> = cmd.split_whitespace().collect();
-            Command::new(parts[0]).args(&parts[1..]).spawn()?.wait()?;
+            let args = app.construct_command_args();
+            println!("{:?}", args);
+            if let Some((program, args)) = args.split_first() {
+                Command::new(program).args(args).spawn()?.wait()?;
+            }
         }
     }
 

@@ -80,12 +80,27 @@ impl App {
         result
     }
 
+    pub fn construct_command_args(&self) -> Vec<String> {
+        let mut args = vec![self.config.command.clone(), ".".to_owned()];
+        args.extend(self.file_tree.get_command_args());
+        args.extend(self.options.get_command_args());
+        args.extend(self.templates.get_command_args());
+        args
+    }
+
     pub fn construct_command(&self) -> String {
-        let mut parts = vec!["codeprompt".to_owned(), ".".to_owned()];
-        parts.extend(self.file_tree.get_command_args());
-        parts.extend(self.options.get_command_args());
-        parts.extend(self.templates.get_command_args());
-        parts.join(" ")
+        let args = self.construct_command_args();
+        args.iter()
+            .enumerate()
+            .map(|(i, arg)| {
+                if i > 0 && (args[i - 1] == "--include" || args[i - 1] == "--exclude") {
+                    format!("\"{}\"", arg)
+                } else {
+                    arg.to_string()
+                }
+            })
+            .collect::<Vec<_>>()
+            .join(" ")
     }
 
     /// Inner run loop, separated from public `run` to ensure cleanup runs if there is a runtime

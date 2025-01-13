@@ -6,6 +6,8 @@ use std::path::PathBuf;
 #[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct Config {
+    /// Command to run
+    pub command: String,
     /// Path to the template directory
     pub template_dir: Option<PathBuf>,
     /// Default options
@@ -18,6 +20,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            command: "codeprompt".to_owned(),
             template_dir: None,
             defaults: OptionState::default(),
             config_status: false,
@@ -93,11 +96,7 @@ impl Config {
             config.config_status = true;
             Ok(config)
         } else {
-            Ok(Self {
-                template_dir: None,
-                defaults: OptionState::default(),
-                config_status: false,
-            })
+            Ok(Self::default())
         }
     }
 }

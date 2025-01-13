@@ -242,13 +242,13 @@ impl Panel for FileTree {
 
         if !includes.is_empty() {
             args.push("--include".to_owned());
-            let include_arg = format!("\"{}\"", includes.join(", "));
+            let include_arg = format!("{}", includes.join(", "));
             args.push(include_arg);
         }
 
         if !excludes.is_empty() {
             args.push("--exclude".to_owned());
-            let exclude_args = format!("\"{}\"", excludes.join(", "));
+            let exclude_args = format!("{}", excludes.join(", "));
             args.push(exclude_args);
         }
 
