@@ -36,6 +36,8 @@ pub struct App {
     config: Config,
     /// Currently focused button
     pub focused_button: usize,
+    /// Whether to show the help popup
+    show_help: bool,
 }
 
 impl App {
@@ -54,6 +56,7 @@ impl App {
             command: None,
             config,
             focused_button: 0,
+            show_help: false,
         })
     }
 
@@ -120,6 +123,7 @@ impl App {
                     self.active_panel,
                     self.focused_button,
                     self.config.config_status,
+                    self.show_help,
                 );
             })?;
 
@@ -144,5 +148,9 @@ impl App {
         self.options = OptionsPanel::new(&self.config);
         self.templates = TemplatesPanel::new(&self.config)?;
         Ok(())
+    }
+
+    pub fn toggle_help(&mut self) {
+        self.show_help = !self.show_help;
     }
 }

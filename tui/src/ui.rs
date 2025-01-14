@@ -16,6 +16,7 @@ pub fn draw(
     active_panel: ActivePanel,
     focused_button: usize,
     user_config_found: bool,
+    show_help: bool,
 ) {
     // Calculate height required for command preview
     let max_line_width = frame.area().width as usize - 4;
@@ -41,6 +42,10 @@ pub fn draw(
         chunks[1],
     );
     draw_button_row(frame, focused_button, active_panel, chunks[2]);
+
+    if show_help {
+        crate::help::draw_help(frame, frame.area());
+    }
 }
 
 fn draw_command_preview(frame: &mut Frame, command: &str, area: Rect, user_config_found: bool) {
@@ -54,7 +59,7 @@ fn draw_command_preview(frame: &mut Frame, command: &str, area: Rect, user_confi
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title(format!("Command Preview{}", config_status)),
+                .title(format!("Command Preview{}{}", config_status, " • Press ? for help")),
         )
         .wrap(Wrap { trim: true });
 

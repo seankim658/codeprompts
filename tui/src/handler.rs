@@ -10,6 +10,7 @@ pub const MOVE_RIGHT: char = 'l';
 pub const MOVE_DOWN: char = 'j';
 pub const MOVE_UP: char = 'k';
 const EXIT: char = 'q';
+const HELP_KEY: char = '?';
 
 /// Entry point point for handling generic application keyboard input events
 pub fn handle_input(app: &mut App, key: KeyEvent) -> Result<()> {
@@ -17,6 +18,9 @@ pub fn handle_input(app: &mut App, key: KeyEvent) -> Result<()> {
         // Global key handlers
         (KeyCode::Char(EXIT), KeyModifiers::NONE) => {
             app.should_exit = true;
+        }
+        (KeyCode::Char(HELP_KEY), KeyModifiers::NONE) => {
+            app.toggle_help();
         }
 
         // Panel navigation
