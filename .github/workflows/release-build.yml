@@ -20,104 +20,108 @@ jobs:
             target: x86_64-pc-windows-msvc
 
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        target: ${{ matrix.platform.target }}
-        override: true
+      - uses: actions/checkout@v3
 
-    # Build CLI binary
-    - name: Build CLI
-      run: cargo build --verbose --release --target ${{ matrix.platform.target }} -p codeprompt
-    
-    # Build TUI binary  
-    - name: Build TUI
-      run: cargo build --verbose --release --target ${{ matrix.platform.target }} -p codeprompt-tui
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.platform.target }}
+          override: true
 
-    # Rename binaries and generate checksums
-    - name: Prepare Assets
-      shell: bash
-      run: |
-        cd target/${{ matrix.platform.target }}/release
-        
-        # Rename CLI binary
-        mv codeprompt${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }} \
-          codeprompt-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
-        
-        # Rename TUI binary  
-        mv codeprompt-tui${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }} \
-          codeprompt-tui-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
-        
-        # Generate checksums
-        if [[ "${{ matrix.platform.os }}" == "windows-latest" ]]; then
-          # Windows checksums
-          powershell -Command "(Get-FileHash codeprompt-${{ matrix.platform.release_for }}.exe -Algorithm SHA256).Hash.ToLower() + '  codeprompt-${{ matrix.platform.release_for }}.exe'" > codeprompt-${{ matrix.platform.release_for }}.sha256
-          powershell -Command "(Get-FileHash codeprompt-tui-${{ matrix.platform.release_for }}.exe -Algorithm SHA256).Hash.ToLower() + '  codeprompt-tui-${{ matrix.platform.release_for }}.exe'" > codeprompt-tui-${{ matrix.platform.release_for }}.sha256
-        else
-          # Unix checksums
-          sha256sum codeprompt-${{ matrix.platform.release_for }} > codeprompt-${{ matrix.platform.release_for }}.sha256
-          sha256sum codeprompt-tui-${{ matrix.platform.release_for }} > codeprompt-tui-${{ matrix.platform.release_for }}.sha256
-        fi
+      # Build CLI binary
+      - name: Build CLI
+        run: cargo build --verbose --release --target ${{ matrix.platform.target }} -p codeprompt
 
-    # Upload CLI binary and checksum
-    - name: Upload CLI Binary
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./target/${{ matrix.platform.target }}/release/codeprompt-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
-        asset_name: codeprompt-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
-        asset_content_type: application/octet-stream
+      # Build TUI binary
+      - name: Build TUI
+        run: cargo build --verbose --release --target ${{ matrix.platform.target }} -p codeprompt-tui
 
-    - name: Upload CLI Checksum
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./target/${{ matrix.platform.target }}/release/codeprompt-${{ matrix.platform.release_for }}.sha256
-        asset_name: codeprompt-${{ matrix.platform.release_for }}.sha256
-        asset_content_type: text/plain
+      # Rename binaries and generate checksums
+      - name: Prepare Assets
+        shell: bash
+        run: |
+          cd target/${{ matrix.platform.target }}/release
 
-    # Upload TUI binary and checksum  
-    - name: Upload TUI Binary
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./target/${{ matrix.platform.target }}/release/codeprompt-tui-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
-        asset_name: codeprompt-tui-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
-        asset_content_type: application/octet-stream
+          # Rename CLI binary
+          mv codeprompt${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }} \
+            codeprompt-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
 
-    - name: Upload TUI Checksum
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./target/${{ matrix.platform.target }}/release/codeprompt-tui-${{ matrix.platform.release_for }}.sha256
-        asset_name: codeprompt-tui-${{ matrix.platform.release_for }}.sha256
-        asset_content_type: text/plain
+          # Rename TUI binary  
+          mv codeprompt-tui${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }} \
+            codeprompt-tui-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
+
+          # Generate checksums
+          if [[ "${{ matrix.platform.os }}" == "windows-latest" ]]; then
+            # Windows checksums
+            powershell -Command "(Get-FileHash codeprompt-${{ matrix.platform.release_for }}.exe -Algorithm SHA256).Hash.ToLower() + '  codeprompt-${{ matrix.platform.release_for }}.exe'" > codeprompt-${{ matrix.platform.release_for }}.sha256
+            powershell -Command "(Get-FileHash codeprompt-tui-${{ matrix.platform.release_for }}.exe -Algorithm SHA256).Hash.ToLower() + '  codeprompt-tui-${{ matrix.platform.release_for }}.exe'" > codeprompt-tui-${{ matrix.platform.release_for }}.sha256
+          elif [[ "${{ matrix.platform.os }}" == "macos-latest" ]]; then
+            # macOS checksums
+            shasum -a 256 codeprompt-${{ matrix.platform.release_for }} > codeprompt-${{ matrix.platform.release_for }}.sha256
+            shasum -a 256 codeprompt-tui-${{ matrix.platform.release_for }} > codeprompt-tui-${{ matrix.platform.release_for }}.sha256
+          else
+            # Unix checksums
+            sha256sum codeprompt-${{ matrix.platform.release_for }} > codeprompt-${{ matrix.platform.release_for }}.sha256
+            sha256sum codeprompt-tui-${{ matrix.platform.release_for }} > codeprompt-tui-${{ matrix.platform.release_for }}.sha256
+          fi
+
+      # Upload CLI binary and checksum
+      - name: Upload CLI Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./target/${{ matrix.platform.target }}/release/codeprompt-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
+          asset_name: codeprompt-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
+          asset_content_type: application/octet-stream
+
+      - name: Upload CLI Checksum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./target/${{ matrix.platform.target }}/release/codeprompt-${{ matrix.platform.release_for }}.sha256
+          asset_name: codeprompt-${{ matrix.platform.release_for }}.sha256
+          asset_content_type: text/plain
+
+      # Upload TUI binary and checksum
+      - name: Upload TUI Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./target/${{ matrix.platform.target }}/release/codeprompt-tui-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
+          asset_name: codeprompt-tui-${{ matrix.platform.release_for }}${{ matrix.platform.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
+          asset_content_type: application/octet-stream
+
+      - name: Upload TUI Checksum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./target/${{ matrix.platform.target }}/release/codeprompt-tui-${{ matrix.platform.release_for }}.sha256
+          asset_name: codeprompt-tui-${{ matrix.platform.release_for }}.sha256
+          asset_content_type: text/plain
 
   # Templates job remains the same but needs path updated for new structure
   upload-templates:
     needs: release
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Compress templates directory
-      run: zip -r templates.zip cli/src/templates
-    - name: Upload Release Asset (Templates)
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./templates.zip
-        asset_name: templates.zip
-        asset_content_type: application/zip
+      - uses: actions/checkout@v3
+      - name: Compress templates directory
+        run: zip -r templates.zip cli/src/templates
+      - name: Upload Release Asset (Templates)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./templates.zip
+          asset_name: templates.zip
+          asset_content_type: application/zip
