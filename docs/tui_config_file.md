@@ -1,6 +1,6 @@
 # TUI Config File
 
-The TUI will look for an optional configuration file at `~/.codeprompt.toml`. If no configuration file is found, the TUI will fall back on the default options specified in the [CLI options](/docs/options.md).Here, you can override the default values, specify where the TUI should look for templates, and update the command to run.  
+The TUI will look for an optional configuration file at `~/.codeprompt.toml`. If no configuration file is found, the TUI will fall back on the default options specified in the [CLI options](/docs/options.md). Here, you can override the default values, specify where the TUI should look for templates, and update the command to run.  
 
 
 ```toml
@@ -13,9 +13,9 @@ template_dir = "path/to/your/templates/directory/"
 exclude_priority = false
 # Exclude files/folders from the source tree based on exclude patterns
 exclude_from_tree = false
-# Whether to respect the .gitignore file
 diff_staged = false
 diff_unstaged = false
+# Whether to respect the .gitignore file
 gitignore = true
 no_tokens = false
 no_line_numbers = false
