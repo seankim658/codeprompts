@@ -11,7 +11,6 @@ fn main() -> Result<()> {
             println!("{}", &cmd[1..]);
         } else {
             let args = app.construct_command_args();
-            println!("{:?}", args);
             if let Some((program, args)) = args.split_first() {
                 Command::new(program).args(args).spawn()?.wait()?;
             }
