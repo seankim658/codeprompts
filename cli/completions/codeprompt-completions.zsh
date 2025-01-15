@@ -24,22 +24,22 @@ _codeprompt() {
 '-t+[Optional path to Handlebars template]:TEMPLATE:_files' \
 '--template=[Optional path to Handlebars template]:TEMPLATE:_files' \
 '--issue=[Fetch a specific Github issue for the repository]:ISSUE: ' \
-'--include-priority[Pattern priority in case of conflict (True to prioritize Include pattern, False to prioritize exclude pattern). Defaults to True]' \
-'--exclude-from-tree[Whether to exclude files/folders from the source tree based on exclude patterns. Defaults to False]' \
-'--gitignore[Whether to respect the .gitignore file. Defaults to True]' \
-'-d[Whether to capture the git diff for staged changes only (equivalent to running \`git diff --cached\` or \`git diff --staged\`. Defaults to False]' \
-'--diff-staged[Whether to capture the git diff for staged changes only (equivalent to running \`git diff --cached\` or \`git diff --staged\`. Defaults to False]' \
-'-u[Whether to capture the git diff for unstaged changes only (equivalent to running \`git diff\`). Defaults to False]' \
-'--diff-unstaged[Whether to capture the git diff for unstaged changes only (equivalent to running \`git diff\`). Defaults to False]' \
-'--tokens[Display approximate token count of the genrated prompt. Defaults to True]' \
-'-l[Toggle line numbers to source code. Defaults to True]' \
-'--line-numbers[Toggle line numbers to source code. Defaults to True]' \
-'--no-codeblock[Disable wrapping code inside markdown code blocks. Defaults to False]' \
-'--relative-paths[Use relative paths instead of absolute paths, including parent directory. Defaults to True]' \
-'--no-clipboard[Disable copying to clipboard. Defaults to False]' \
-'--spinner[Whether to render the spinner (incurs some overhead but is nice to look at). Defaults to True]' \
+'--exclude-priority[Change pattern priority in case of conflict to prioritize the exclusion pattern]' \
+'--exclude-from-tree[Eclude files/folders from the source tree based on exclude patterns]' \
+'--gitignore[Don'\''t respect .gitignore file]' \
+'-d[Capture the git diff for staged changes only (equivalent to running \`git diff --cached\` or \`git diff --staged\`]' \
+'--diff-staged[Capture the git diff for staged changes only (equivalent to running \`git diff --cached\` or \`git diff --staged\`]' \
+'-u[Capture the git diff for unstaged changes only (equivalent to running \`git diff\`)]' \
+'--diff-unstaged[Capture the git diff for unstaged changes only (equivalent to running \`git diff\`)]' \
+'--no-tokens[Don'\''t display approximate token count of the genrated prompt]' \
+'-l[Turn off line numbers in source code blocks]' \
+'--no-line-numbers[Turn off line numbers in source code blocks]' \
+'--no-codeblock[Disable wrapping code inside markdown code blocks]' \
+'--relative-paths[Use relative paths instead of absolute paths, including parent directory]' \
+'--no-clipboard[Disable copying to clipboard]' \
+'--no-spinner[Whether to render the spinner]' \
 '--json[Whether to print the output as JSON. Defaults to False]' \
-'--verbose[Run in verbose mode to investigate glob pattern matching. Defaults to False]' \
+'--verbose[Run in verbose mode to investigate glob pattern matching]' \
 '-h[Print help (see more with '\''--help'\'')]' \
 '--help[Print help (see more with '\''--help'\'')]' \
 '-V[Print version]' \
