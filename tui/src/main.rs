@@ -10,6 +10,7 @@ fn main() -> Result<()> {
         if cmd.starts_with('!') {
             println!("{}", &cmd[1..]);
         } else {
+            println!("Command: {}", &cmd);
             let args = app.construct_command_args();
             if let Some((program, args)) = args.split_first() {
                 Command::new(program).args(args).spawn()?.wait()?;
