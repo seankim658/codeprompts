@@ -4,7 +4,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, Paragraph, Wrap};
 use ratatui::Frame;
 
-const HELP_TEXT: [(&str, &str); 19] = [
+const HELP_TEXT: [(&str, &str); 22] = [
     ("Navigation:", ""),
     ("ctrl-h", "Move to left panel"),
     ("ctrl-l", "Move to right panel"),
@@ -16,6 +16,9 @@ const HELP_TEXT: [(&str, &str); 19] = [
     ("enter", "Expand/collapse directory"),
     ("i", "Include file/directory"),
     ("x", "Exclude file/directory"),
+    ("gg", "Jump to top of file tree"),
+    ("G", "Jump to bottom of file tree"),
+    ("c", "Collapse all open nodes"),
     ("", ""),
     ("Options & Templates:", ""),
     ("j/k", "Move up/down"),
