@@ -9,6 +9,7 @@ use ratatui::widgets::{Block, Borders};
 use ratatui::Frame;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 
 const INCLUDE_KEY: char = 'i';
@@ -35,6 +36,12 @@ pub struct FileTree {
     statuses: HashMap<PathBuf, EntryStatus>,
     /// Cache the file tree so its not redrawn on every frame
     cached_items: Option<Vec<TreeItem<'static, String>>>,
+    /// Holds the last key press, used for double key keybinds
+    last_key_press: Option<char>,
+    /// Key press time, used for tracking double key keybinds
+    key_press_time: Instant,
+    /// Key timeout for double presses, used for tracking double key keybinds
+    key_timeout: Duration,
 }
 
 impl FileTree {
@@ -48,6 +55,9 @@ impl FileTree {
             state: TreeState::default(),
             statuses: HashMap::new(),
             cached_items: None,
+            last_key_press: None,
+            key_press_time: Instant::now(),
+            key_timeout: Duration::from_millis(500),
         })
     }
 
@@ -73,11 +83,12 @@ impl FileTree {
             let entry = entry?;
             let abs_path = entry.path();
 
-            let rel_path = abs_path.strip_prefix(root).unwrap_or(&abs_path).to_path_buf();
+            let rel_path = abs_path
+                .strip_prefix(root)
+                .unwrap_or(&abs_path)
+                .to_path_buf();
 
-            let identifier = rel_path
-                .to_string_lossy()
-                .into_owned();
+            let identifier = rel_path.to_string_lossy().into_owned();
 
             let name = abs_path
                 .file_name()
@@ -152,11 +163,49 @@ impl FileTree {
             self.invalidate_cache();
         }
     }
+
+    /// Jump to the top of the tree
+    fn jump_to_top(&mut self) {
+        self.state.select_first();
+    }
+
+    /// Jump to the bottom of the tree
+    fn jump_to_bottom(&mut self) {
+        if self.cached_items.is_none() {
+            self.cached_items = Some(
+                Self::build_tree_items(&self.root, &self.root, &self.statuses).unwrap_or_else(
+                    |e| {
+                        vec![TreeItem::new_leaf(
+                            "error".to_owned(),
+                            format!("Error: {}", e),
+                        )]
+                    },
+                ),
+            )
+        }
+        self.state.select_last();
+    }
 }
 
 impl Panel for FileTree {
     fn handle_input(&mut self, key: KeyEvent) -> Result<()> {
         match key.code {
+            KeyCode::Char('g') => {
+                let now = Instant::now();
+                if let Some('g') = self.last_key_press {
+                    if now.duration_since(self.key_press_time) < self.key_timeout {
+                        self.jump_to_top();
+                        self.last_key_press = None;
+                        return Ok(());
+                    }
+                }
+                self.last_key_press = Some('g');
+                self.key_press_time = now;
+            }
+            KeyCode::Char('G') => {
+                self.jump_to_bottom();
+                self.last_key_press = None;
+            }
             KeyCode::Char(MOVE_DOWN) => {
                 self.state.key_down();
             }
