@@ -294,8 +294,10 @@ async fn main() -> Result<(), Error> {
     };
 
     // Add token count warning if needed
-    if let Some(warning) = validate_token_count(tokens) {
-        warnings.push(warning);
+    if !args.no_clipboard {
+        if let Some(warning) = validate_token_count(tokens) {
+            warnings.push(warning);
+        }
     }
 
     let paths: Vec<String> = files
