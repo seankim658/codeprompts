@@ -185,6 +185,12 @@ impl FileTree {
         }
         self.state.select_last();
     }
+
+    /// Close all open nodes in the tree
+    fn close_all_nodes(&mut self) {
+        self.state.close_all();
+        self.invalidate_cache();
+    }
 }
 
 impl Panel for FileTree {
@@ -206,22 +212,33 @@ impl Panel for FileTree {
                 self.jump_to_bottom();
                 self.last_key_press = None;
             }
+            KeyCode::Char('c') => {
+                self.close_all_nodes();
+                self.last_key_press = None;
+            }
             KeyCode::Char(MOVE_DOWN) => {
                 self.state.key_down();
+                self.last_key_press = None;
             }
             KeyCode::Char(MOVE_UP) => {
                 self.state.key_up();
+                self.last_key_press = None;
             }
             KeyCode::Enter => {
                 self.state.toggle_selected();
+                self.last_key_press = None;
             }
             KeyCode::Char(INCLUDE_KEY) => {
                 self.toggle_include();
+                self.last_key_press = None;
             }
             KeyCode::Char(EXCLUDE_KEY) => {
                 self.toggle_exclude();
+                self.last_key_press = None;
             }
-            _ => {}
+            _ => {
+                self.last_key_press = None;
+            }
         }
 
         Ok(())
