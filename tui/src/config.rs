@@ -74,7 +74,7 @@ impl OptionState {
             ("No Line Numbers", &mut self.no_line_numbers),
             ("No Codeblock", &mut self.no_codeblock),
             ("Relative Paths", &mut self.relative_paths),
-            ("No CLipboard", &mut self.no_clipboard),
+            ("No Clipboard", &mut self.no_clipboard),
             ("No Spinner", &mut self.no_spinner),
         ]
     }
