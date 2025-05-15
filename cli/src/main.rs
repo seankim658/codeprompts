@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use anyhow::{Context, Error, Result};
 use arboard::Clipboard;
 use clap::{ArgAction, Command, CommandFactory, Parser, Subcommand};
@@ -331,7 +332,15 @@ async fn main() -> Result<(), Error> {
     }
 
     if let Some(output_path) = &args.output {
-        write_output_file(output_path, &rendered_output)?;
+        if let Err(e) = write_output_file(output_path, &rendered_output) {
+            eprintln!(
+                "{}{}{} {}",
+                "[".bold().white(),
+                "!".bold().red(),
+                "]".bold().white(),
+                format!("Output error: {}", e).red()
+            );
+        }
     }
 
     // Print warnings if needed
@@ -381,9 +390,23 @@ fn copy_to_clipboard(content: &str) -> Result<(), Error> {
 /// - `Result<(), anyhow::Error>`: Unit tuple on success or an anyhow error.
 ///
 fn write_output_file(path: &str, content: &str) -> Result<(), Error> {
-    let file = std::fs::File::create(path)?;
+    let path_obj = std::path::Path::new(path);
+    if let Some(parent) = path_obj.parent() {
+        if !parent.exists() {
+            return Err(anyhow!(
+                "Output directory '{}' does not exist",
+                parent.display()
+            ));
+        }
+    }
+
+    let file = std::fs::File::create(path)
+        .with_context(|| format!("Failed to create output file: {}", path))?;
     let mut writer = std::io::BufWriter::new(file);
-    write!(writer, "{}", content)?;
+
+    write!(writer, "{}", content)
+        .with_context(|| format!("Failed to write to output file: {}", path))?;
+
     println!(
         "{}{}{} {}",
         "[".bold().white(),
