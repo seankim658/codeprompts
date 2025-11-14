@@ -86,6 +86,7 @@ pub fn traverse_directory(
     // Walk through the directory tree.
     // Initialize a WalkBuilder with the canonical root path (by default, respects .gitignore).
     let tree = WalkBuilder::new(&canonical_root_path)
+        .standard_filters(false)
         .git_ignore(gitignore)
         .build()
         // Filter out errors, only keep successful entries.
