@@ -3,16 +3,35 @@
 //! Module that handles all file and file pathing functionality.
 
 use anyhow::{anyhow, Result};
+use colored::Colorize;
 use glob::Pattern;
 use ignore::WalkBuilder;
 use serde_json::json;
 use std::collections::HashSet;
 use std::fs;
+use std::io::{self, Write};
 use std::path::Path;
 use termtree::Tree;
 use tracing::debug;
 
 const CODE_BLOCK_TICKS: &str = "```";
+
+const SENSITIVE_FILE_PATTERNS: &[&str] = &[
+    ".env",
+    ".env.local",
+    ".env.production",
+    ".env.development",
+    "*.pem",
+    "*.key",
+    "*.p12",
+    "*.pfx",
+    "id_rsa",
+    "id_dsa",
+    "*.secret",
+    "secrets.yml",
+    "secrets.yaml",
+    "credentials.json",
+];
 
 /// Parses a comma-delimited list from the user arguments.
 ///
@@ -83,8 +102,42 @@ pub fn traverse_directory(
     let include_patterns = compile_patterns(include)?;
     let exclude_patterns = compile_patterns(exclude)?;
 
-    // Walk through the directory tree.
-    // Initialize a WalkBuilder with the canonical root path (by default, respects .gitignore).
+    let mut sensitive_files = Vec::new();
+
+    let tree = WalkBuilder::new(&canonical_root_path)
+        .standard_filters(false)
+        .git_ignore(gitignore)
+        .build();
+
+    for entry in tree.filter_map(|e| e.ok()) {
+        let path = entry.path();
+        if path.is_file()
+            && include_file(
+                path,
+                &include_patterns,
+                &exclude_patterns,
+                exclude_priority,
+                relative_paths,
+            )
+            && is_sensitive_file(path)
+        {
+            let display_path = if relative_paths {
+                path.strip_prefix(std::env::current_dir().unwrap())
+                    .unwrap_or(path)
+                    .display()
+                    .to_string()
+            } else {
+                path.display().to_string()
+            };
+            sensitive_files.push(display_path);
+        }
+    }
+
+    if !sensitive_files.is_empty() && !prompt_for_sensitive_files(&sensitive_files) {
+        return Err(anyhow!("Operation cancelled by user"));
+    }
+
+    // TODO : Probably a better way to handle this later instead of walking twice
     let tree = WalkBuilder::new(&canonical_root_path)
         .standard_filters(false)
         .git_ignore(gitignore)
@@ -105,7 +158,14 @@ pub fn traverse_directory(
                     // Check if the file should be excluded from the tree based on the
                     // exclude patterns and exclude_from_tree arguments. Break the path component
                     // loop if it any part of the path should be excluded.
-                    if exclude_from_tree && !include_file(path, &include_patterns, &exclude_patterns, exclude_priority, relative_paths)
+                    if exclude_from_tree
+                        && !include_file(
+                            path,
+                            &include_patterns,
+                            &exclude_patterns,
+                            exclude_priority,
+                            relative_paths,
+                        )
                     {
                         break;
                     }
@@ -127,7 +187,15 @@ pub fn traverse_directory(
                     };
                 }
 
-                if path.is_file() && include_file(path, &include_patterns, &exclude_patterns, exclude_priority, relative_paths) {
+                if path.is_file()
+                    && include_file(
+                        path,
+                        &include_patterns,
+                        &exclude_patterns,
+                        exclude_priority,
+                        relative_paths,
+                    )
+                {
                     // Read in the file contents into bytes.
                     if let Ok(file_bytes) = fs::read(path) {
                         let code_string = String::from_utf8_lossy(&file_bytes);
@@ -152,7 +220,9 @@ pub fn traverse_directory(
 
                             files.push(json!({
                                 "path": file_path,
-                                "extension": path.extension().and_then(|ext| ext.to_str()).unwrap_or(""),
+                                "extension": path.extension()
+                                    .and_then(|ext| ext.to_str())
+                                    .unwrap_or(""),
                                 "code": formatted_block
                             }));
                         }
@@ -372,4 +442,60 @@ fn compile_patterns(patterns: &[String]) -> Result<HashSet<Pattern>> {
             Pattern::new(normalized).map_err(|e| anyhow!("Invalid pattern {}: {}", p, e))
         })
         .collect()
+}
+
+/// Checks if a file path matches a sensitive file pattern
+///
+/// ### Arguments
+///
+/// - `path`: The file path to check
+///
+/// ### Returns
+///
+/// - `bool`: True if the file matches a sensitive pattern
+///
+fn is_sensitive_file(path: &Path) -> bool {
+    let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+    SENSITIVE_FILE_PATTERNS.iter().any(|pattern| {
+        Pattern::new(pattern)
+            .map(|p| p.matches(file_name))
+            .unwrap_or(false)
+    })
+}
+
+/// Prompts the user to confirm whether to continue when sensitive files are detected.
+///
+/// ### Arguments
+///
+/// - `sensitive_files`: List of sensitive file paths detected.
+///
+/// ### Returns
+///
+/// - `bool`: True if user confirms to continue, False otherwise.
+///
+fn prompt_for_sensitive_files(sensitive_files: &[String]) -> bool {
+    eprintln!(
+        "\n{}{}{} {}",
+        "[".bold().white(),
+        "!".bold().yellow(),
+        "]".bold().white(),
+        "Warning: Sensitive files detected:".yellow()
+    );
+
+    for file in sensitive_files {
+        eprintln!("  - {}", file.red());
+    }
+
+    eprintln!(
+        "\n{}",
+        "These files may contain secrets or credentials.".yellow()
+    );
+    eprint!("{}", "Continue anyway? [y/N] ".bold());
+    io::stdout().flush().unwrap();
+
+    let mut response = String::new();
+    io::stdin().read_line(&mut response).unwrap();
+
+    matches!(response.trim().to_lowercase().as_str(), "y" | "yes")
 }
