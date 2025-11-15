@@ -3,6 +3,7 @@ use anyhow::{Context, Error, Result};
 use arboard::Clipboard;
 use clap::{ArgAction, Command, CommandFactory, Parser, Subcommand};
 use clap_complete::{generate, Generator, Shell};
+use codeprompt::files::prompt_for_sensitive_files;
 use codeprompt::logging;
 use codeprompt::prelude::*;
 use codeprompt::validation::validate_token_count;
@@ -169,14 +170,34 @@ async fn main() -> Result<(), Error> {
     let (template, template_name) = get_template(&args.template)?;
     let handlebars = setup_handlebars_registry(&template, template_name)?;
 
+    let include_patterns = parse_comma_delim_patterns(&args.include);
+    let exclude_patterns = parse_comma_delim_patterns(&args.exclude);
+
+    let sensitive_files = check_sensitive_files(
+        &project_root,
+        &include_patterns,
+        &exclude_patterns,
+        args.exclude_priority,
+        args.relative_paths,
+        args.gitignore,
+    )?;
+
+    if !sensitive_files.is_empty() && !prompt_for_sensitive_files(&sensitive_files) {
+        eprintln!(
+            "\n{}{}{} {}",
+            "[".bold().white(),
+            "!".bold().red(),
+            "]".bold().white(),
+            "Operation cancelled by user".red()
+        );
+        std::process::exit(1);
+    }
+
     let spinner = if !args.no_spinner {
         Some(setup_spinner("Building directory tree..."))
     } else {
         None
     };
-
-    let include_patterns = parse_comma_delim_patterns(&args.include);
-    let exclude_patterns = parse_comma_delim_patterns(&args.exclude);
 
     let tree_data = traverse_directory(
         &project_root,
