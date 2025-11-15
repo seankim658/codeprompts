@@ -6,8 +6,7 @@ use clap_complete::{generate, Generator, Shell};
 use codeprompt::files::prompt_for_sensitive_files;
 use codeprompt::logging;
 use codeprompt::prelude::*;
-use codeprompt::validation::validate_token_count;
-use codeprompt::validation::ValidationConfig;
+use codeprompt::validation::{validate_clipboard_copy, validate_token_count, ValidationConfig};
 use colored::*;
 use git2::Repository;
 use serde_json::json;
@@ -348,8 +347,24 @@ async fn main() -> Result<(), Error> {
         }
     }
 
-    if !args.no_clipboard {
+    let should_copy_to_clipboard = if args.no_clipboard {
+        false
+    } else if !args.no_tokens {
+        validate_clipboard_copy(tokens)
+    } else {
+        true
+    };
+
+    if should_copy_to_clipboard {
         copy_to_clipboard(&rendered_output)?;
+    } else if !args.no_clipboard {
+        eprintln!(
+            "{}{}{} {}",
+            "[".bold().white(),
+            "i".bold().blue(),
+            "]".bold().white(),
+            "Skipped copying to clipboard".dimmed()
+        );
     }
 
     if let Some(output_path) = &args.output {
