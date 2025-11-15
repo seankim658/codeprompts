@@ -1,9 +1,13 @@
 use colored::*;
 use std::path::PathBuf;
 use git2::Repository;
+use std::io::{self, Write};
 
 /// Token count threshold for warning.
-pub const TOKEN_WARNING_THRESHOLD: usize = 15000;
+const TOKEN_WARNING_THRESHOLD: usize = 30_000;
+
+/// Token count threshold for clipboard safety prompt.
+const CLIPBOARD_TOKEN_THRESHOLD: usize = 200_000;
 
 /// Represents different types of validation warnings.
 #[derive(Debug)]
@@ -138,4 +142,61 @@ pub fn validate_token_count(token_count: usize) -> Option<ValidationWarning> {
     } else {
         None
     }
+}
+
+/// Validates whether clipboard copy should proceed based on token count.
+/// Prompts user if above threshold.
+///
+/// ### Arguments
+///
+/// - `token_count`: The number of tokens in the output.
+///
+/// ### Returns
+///
+/// - `bool`: True if clipboard copy should proceed, False otherwise.
+///
+pub fn validate_clipboard_copy(token_count: usize) -> bool {
+    if token_count > CLIPBOARD_TOKEN_THRESHOLD {
+        prompt_for_large_clipboard(token_count)
+    } else {
+        true
+    }
+}
+
+/// Prompts the user to confirm whether to copy to clipboard when output is very large.
+///
+/// ### Arguments
+///
+/// - `token_count`: The number of tokens in the output.
+///
+/// ### Returns
+///
+/// - `bool`: True if user confirms to copy, False otherwise.
+///
+fn prompt_for_large_clipboard(token_count: usize) -> bool {
+    eprintln!(
+        "\n{}{}{} {}",
+        "[".bold().white(),
+        "!".bold().yellow(),
+        "]".bold().white(),
+        "Warning: Output is very large".yellow()
+    );
+
+    eprintln!(
+        "  Token count: {} (threshold: {})",
+        token_count.to_string().red(),
+        CLIPBOARD_TOKEN_THRESHOLD.to_string().yellow()
+    );
+
+    eprintln!(
+        "\n{}",
+        "Copying this much data to clipboard may cause system issues.".yellow()
+    );
+    eprint!("{}", "Copy to clipboard anyway? [y/N] ".bold());
+    io::stdout().flush().unwrap();
+
+    let mut response = String::new();
+    io::stdin().read_line(&mut response).unwrap();
+
+    matches!(response.trim().to_lowercase().as_str(), "y" | "yes")
 }
