@@ -104,43 +104,6 @@ pub fn traverse_directory(
     let include_patterns = compile_patterns(include)?;
     let exclude_patterns = compile_patterns(exclude)?;
 
-    let mut sensitive_files = Vec::new();
-
-    let tree = WalkBuilder::new(&canonical_root_path)
-        .standard_filters(false)
-        .git_ignore(gitignore)
-        .filter_entry(|entry| !in_ignore_list(entry.path()))
-        .build();
-
-    for entry in tree.filter_map(|e| e.ok()) {
-        let path = entry.path();
-        if path.is_file()
-            && include_file(
-                path,
-                &include_patterns,
-                &exclude_patterns,
-                exclude_priority,
-                relative_paths,
-            )
-            && is_sensitive_file(path)
-        {
-            let display_path = if relative_paths {
-                path.strip_prefix(std::env::current_dir().unwrap())
-                    .unwrap_or(path)
-                    .display()
-                    .to_string()
-            } else {
-                path.display().to_string()
-            };
-            sensitive_files.push(display_path);
-        }
-    }
-
-    if !sensitive_files.is_empty() && !prompt_for_sensitive_files(&sensitive_files) {
-        return Err(anyhow!("Operation cancelled by user"));
-    }
-
-    // TODO : Probably a better way to handle this later instead of walking twice
     let tree = WalkBuilder::new(&canonical_root_path)
         .standard_filters(false)
         .git_ignore(gitignore)
@@ -236,6 +199,67 @@ pub fn traverse_directory(
             root
         });
     Ok((tree.to_string(), files))
+}
+
+/// Scans for sensitive files without building the tree.
+///
+/// ### Arguments
+///
+/// - `root`: The path to the root directory.
+/// - `include`: The include patterns.
+/// - `exclude`: The exclude patterns.
+/// - `exclude_priority`: Whether to give priority to the exclude patterns.
+/// - `relative_paths`: Whether to use relative paths.
+/// - `gitignore`: Whether to respect the gitignore file.
+///
+/// ### Returns
+///
+/// - `Result<Vec<String>>`: List of sensitive file paths detected.
+///
+pub fn check_sensitive_files(
+    root: &Path,
+    include: &[String],
+    exclude: &[String],
+    exclude_priority: bool,
+    relative_paths: bool,
+    gitignore: bool,
+) -> Result<Vec<String>> {
+    let canonical_root_path = root.canonicalize()?;
+    let include_patterns = compile_patterns(include)?;
+    let exclude_patterns = compile_patterns(exclude)?;
+    let mut sensitive_files = Vec::new();
+
+    let tree = WalkBuilder::new(&canonical_root_path)
+        .standard_filters(false)
+        .git_ignore(gitignore)
+        .filter_entry(|entry| !in_ignore_list(entry.path()))
+        .build();
+
+    for entry in tree.filter_map(|e| e.ok()) {
+        let path = entry.path();
+        if path.is_file()
+            && include_file(
+                path,
+                &include_patterns,
+                &exclude_patterns,
+                exclude_priority,
+                relative_paths,
+            )
+            && is_sensitive_file(path)
+        {
+            let display_path = if relative_paths {
+                path.strip_prefix(std::env::current_dir().unwrap())
+                    .unwrap_or(path)
+                    .display()
+                    .to_string()
+            } else {
+                path.display().to_string()
+            };
+            sensitive_files.push(display_path);
+        }
+    }
+
+    Ok(sensitive_files)
 }
 
 /// Gets the basename of the filepath.
@@ -478,7 +502,7 @@ fn is_sensitive_file(path: &Path) -> bool {
 ///
 /// - `bool`: True if user confirms to continue, False otherwise.
 ///
-fn prompt_for_sensitive_files(sensitive_files: &[String]) -> bool {
+pub fn prompt_for_sensitive_files(sensitive_files: &[String]) -> bool {
     eprintln!(
         "\n{}{}{} {}",
         "[".bold().white(),

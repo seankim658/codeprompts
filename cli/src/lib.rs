@@ -9,16 +9,18 @@ pub mod constants {
 
 pub mod files;
 pub mod git;
+pub mod logging;
 pub mod spinner;
 pub mod template;
 pub mod tokenizer;
-pub mod logging;
 pub mod validation;
 
 pub mod prelude {
     //! Easy import prelude module.
-    pub use crate::files::{basename, parse_comma_delim_patterns, traverse_directory};
-    pub use crate::git::{git_diff, get_repo_info, fetch_github_issue};
+    pub use crate::files::{
+        basename, check_sensitive_files, parse_comma_delim_patterns, traverse_directory,
+    };
+    pub use crate::git::{fetch_github_issue, get_repo_info, git_diff};
     pub use crate::spinner::setup_spinner;
     pub use crate::template::{get_template, render_template, setup_handlebars_registry};
     pub use crate::tokenizer::tokenizer_init;
