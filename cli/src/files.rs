@@ -33,6 +33,8 @@ const SENSITIVE_FILE_PATTERNS: &[&str] = &[
     "credentials.json",
 ];
 
+const IGNORE_LIST: &[&str] = &[".git", "node_modules", "venv"];
+
 /// Parses a comma-delimited list from the user arguments.
 ///
 /// ### Arguments
@@ -107,6 +109,7 @@ pub fn traverse_directory(
     let tree = WalkBuilder::new(&canonical_root_path)
         .standard_filters(false)
         .git_ignore(gitignore)
+        .filter_entry(|entry| !in_ignore_list(entry.path()))
         .build();
 
     for entry in tree.filter_map(|e| e.ok()) {
@@ -141,6 +144,7 @@ pub fn traverse_directory(
     let tree = WalkBuilder::new(&canonical_root_path)
         .standard_filters(false)
         .git_ignore(gitignore)
+        .filter_entry(|entry| !in_ignore_list(entry.path()))
         .build()
         // Filter out errors, only keep successful entries.
         .filter_map(|e| e.ok())
@@ -498,4 +502,21 @@ fn prompt_for_sensitive_files(sensitive_files: &[String]) -> bool {
     io::stdin().read_line(&mut response).unwrap();
 
     matches!(response.trim().to_lowercase().as_str(), "y" | "yes")
+}
+
+/// Checks if a path is in the ignore list.
+///
+/// ### Arguments
+///
+/// - `path`: The path to check.
+///
+/// ### Returns
+///
+/// - `bool`: True if the path should be excluded
+///
+fn in_ignore_list(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|n| n.to_str())
+        .map(|name| IGNORE_LIST.contains(&name))
+        .unwrap_or(false)
 }
