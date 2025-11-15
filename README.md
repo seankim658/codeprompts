@@ -4,8 +4,6 @@ Command line (and TUI) tool for creating LLM prompts from your code using [Handl
 
 This was a project to brush up on Rust and is based on [code2prompt](https://github.com/mufeedvh/code2prompt) with some additional functionality that I found useful.
 
-- [Why Code Prompts?](#why-code-prompts)
-- [Terminal User Interface](#terminal-user-interface)
 - [Installation](#installation)
   - [Release Binary](#release-binary)
   - [Building From Source](#building-from-source)
@@ -13,29 +11,9 @@ This was a project to brush up on Rust and is based on [code2prompt](https://git
   - [Arguments](#arguments)
 - [Templates](#templates)
 - [Usage Guides](./docs/README.md)
+- [Terminal User Interface](#terminal-user-interface)
 
 ---
-
-## Why Code Prompts?
-
-Manually copy and pasting code and code snippets to LLMs has several issues:
-
-1. **You lose formatting and structure**. For a language like Python that uses whitespace, the formatting and structure of the code is important for the LLM to accurately and comprehensively understand the code for your request.
-2. **You lose context**. In order for the LLM to provide the best responses, it requires the context from all of your code. This includes your code snippet's dependencies, other user defined modules/objects, and other scope variables and concepts.
-3. **You lose prompt standardization**: If you are using LLMs to perform repeated tasks like documenting code, you have to make sure that your documentation styling guidelines are consistent across every request.
-4. **Line numbers!**: On large inputs, LLMs tend to provide code changes to precise lines, making it difficult to pin down exactly where to apply/review the changes proposed. Line numbers help alleviate this for better code provenance.
-
-To get the most out of LLMs, prompting has to be clear, comprehensive, and consistent. How code prompts fixes these issues:
-
-1. Code prompts will ensure the inherent structure of your code is retained to limit any possible misinterpretation or inferrence required from the LLM.
-2. The complete context required for understanding the code is enclosed in a standardized format. This includes the project directory tree and file pathing.
-3. By using Handlebar templates, the prompts will be comprehensive and consistent. If your preferred style guide and/or coding practices are updated in the future, there is no need to remember to update all future manually typed prompts. Instead, just update the target Handlebars template once.
-
-## Terminal User Interface
-
-![TUI](./imgs/tui.png)
-
-The project also includes an optional TUI wrapper where you can provide a [config file](./docs/tui_config_file.md) to override various flags and see how the command is structured before running it.
 
 ## Installation
 
@@ -47,7 +25,7 @@ To download a release binary, go to the [releases](https://github.com/seankim658
 
 **Note**: In order to use the TUI binary, you will have to add the CLI binary to your path and either:
 
-- Rename the CLI release binary to `codeprompt` 
+- Rename the CLI release binary to `codeprompt`, or
 - Update the config file for the command to run the CLI binary
 
 ### Building From Source
@@ -127,3 +105,9 @@ Currently, the included pre-defined templates are:
 | [`git_commit.hbs`](./src/templates/git_commit.hbs)                         | Template for creating a concise and accurate git commit message. Can be used with both the `diff-staged` and `diff-unstaged` options.                                      |
 | [`git_issues.hbs`](./src/templates/git_issue.hbs)                          | Template for implementing changes based on a Github issue.                                                                                                                 |
 | [`code_optimization.hbs`](./src/templates/code_optimization.hbs)           | Template for optimizing code in time and space complexity.                                                                                                                 |
+
+## Terminal User Interface
+
+![TUI](./imgs/tui.png)
+
+The project also includes an optional TUI wrapper where you can provide a [config file](./docs/tui_config_file.md) to override various flags and see how the command is structured before running it.
