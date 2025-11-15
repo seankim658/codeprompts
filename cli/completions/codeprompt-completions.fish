@@ -1,6 +1,6 @@
 # Print an optspec for argparse to handle cmd's options that are independent of any subcommand.
 function __fish_codeprompt_global_optspecs
-	string join \n include= exclude= exclude-priority exclude-from-tree gitignore d/diff-staged u/diff-unstaged no-tokens c/encoding= o/output= l/no-line-numbers no-codeblock relative-paths no-clipboard t/template= no-spinner json issue= verbose h/help V/version
+	string join \n include= exclude= exclude-priority exclude-from-tree gitignore d/diff-staged u/diff-unstaged no-tokens c/encoding= o/output= l/no-line-numbers no-codeblock relative-paths no-clipboard t/template= no-spinner json issue= verbose no-warnings h/help V/version
 end
 
 function __fish_codeprompt_needs_command
@@ -43,6 +43,7 @@ complete -c codeprompt -n "__fish_codeprompt_needs_command" -l no-clipboard -d '
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l no-spinner -d 'Whether to render the spinner'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l json -d 'Whether to print the output as JSON. Defaults to False'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l verbose -d 'Run in verbose mode to investigate glob pattern matching'
+complete -c codeprompt -n "__fish_codeprompt_needs_command" -l no-warnings -d 'Ignore all warnings (sensitive files, large token counts, template warnings)'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -s h -l help -d 'Print help (see more with \'--help\')'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -s V -l version -d 'Print version'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -a "completion" -d 'Generate shell completion scripts.'

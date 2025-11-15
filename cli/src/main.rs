@@ -102,6 +102,10 @@ struct Args {
     /// Run in verbose mode to investigate glob pattern matching.
     #[arg(long, action(ArgAction::SetTrue))]
     verbose: bool,
+
+    /// Ignore all warnings (sensitive files, large token counts, template warnings).
+    #[arg(long, action(ArgAction::SetTrue))]
+    no_warnings: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -158,13 +162,18 @@ async fn main() -> Result<(), Error> {
         args.issue,
         &args.template,
     );
-    // Check for git repo first since it will exit if not found
+
     if let Err(error) = validation_config.validate_git_repo(&project_root) {
         eprintln!("{}", error.format());
         std::process::exit(1);
     }
+
     // Get other warnings
-    let mut warnings = validation_config.validate();
+    let mut warnings = if !args.no_warnings {
+        validation_config.validate()
+    } else {
+        Vec::new()
+    };
 
     let (template, template_name) = get_template(&args.template)?;
     let handlebars = setup_handlebars_registry(&template, template_name)?;
@@ -181,7 +190,10 @@ async fn main() -> Result<(), Error> {
         args.gitignore,
     )?;
 
-    if !sensitive_files.is_empty() && !prompt_for_sensitive_files(&sensitive_files) {
+    if !args.no_warnings
+        && !sensitive_files.is_empty()
+        && !prompt_for_sensitive_files(&sensitive_files)
+    {
         eprintln!(
             "\n{}{}{} {}",
             "[".bold().white(),
@@ -315,7 +327,7 @@ async fn main() -> Result<(), Error> {
     };
 
     // Add token count warning if needed
-    if !args.no_clipboard {
+    if !args.no_clipboard && !args.no_warnings {
         if let Some(warning) = validate_token_count(tokens) {
             warnings.push(warning);
         }
@@ -350,7 +362,7 @@ async fn main() -> Result<(), Error> {
     let should_copy_to_clipboard = if args.no_clipboard {
         false
     } else if !args.no_tokens {
-        validate_clipboard_copy(tokens)
+        validate_clipboard_copy(tokens, args.no_warnings)
     } else {
         true
     };
@@ -380,7 +392,7 @@ async fn main() -> Result<(), Error> {
     }
 
     // Print warnings if needed
-    if !warnings.is_empty() {
+    if !args.no_warnings && !warnings.is_empty() {
         for warning in warnings {
             eprintln!("{}", warning.format());
         }

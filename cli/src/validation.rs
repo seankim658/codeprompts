@@ -150,12 +150,18 @@ pub fn validate_token_count(token_count: usize) -> Option<ValidationWarning> {
 /// ### Arguments
 ///
 /// - `token_count`: The number of tokens in the output.
+/// - `no_warnings`: Whether to skip all warnings and prompts.
 ///
 /// ### Returns
 ///
 /// - `bool`: True if clipboard copy should proceed, False otherwise.
 ///
-pub fn validate_clipboard_copy(token_count: usize) -> bool {
+pub fn validate_clipboard_copy(token_count: usize, no_warnings: bool) -> bool {
+    // TODO : This is hacky, should probably handle this directly in main
+    if no_warnings {
+        return true
+    }
+
     if token_count > CLIPBOARD_TOKEN_THRESHOLD {
         prompt_for_large_clipboard(token_count)
     } else {

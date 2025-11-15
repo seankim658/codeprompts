@@ -15,15 +15,15 @@ _codeprompt() {
 
     local context curcontext="$curcontext" state line
     _arguments "${_arguments_options[@]}" : \
-'--include=[Glob patterns to include]:INCLUDE: ' \
-'--exclude=[Glob patterns to exclude]:EXCLUDE: ' \
-'-c+[Tokenizer to use for token count]:ENCODING: ' \
-'--encoding=[Tokenizer to use for token count]:ENCODING: ' \
-'-o+[Redirect output to file]:OUTPUT: ' \
-'--output=[Redirect output to file]:OUTPUT: ' \
+'--include=[Glob patterns to include]:INCLUDE:_default' \
+'--exclude=[Glob patterns to exclude]:EXCLUDE:_default' \
+'-c+[Tokenizer to use for token count]:ENCODING:_default' \
+'--encoding=[Tokenizer to use for token count]:ENCODING:_default' \
+'-o+[Redirect output to file]:OUTPUT:_default' \
+'--output=[Redirect output to file]:OUTPUT:_default' \
 '-t+[Optional path to Handlebars template]:TEMPLATE:_files' \
 '--template=[Optional path to Handlebars template]:TEMPLATE:_files' \
-'--issue=[Fetch a specific Github issue for the repository]:ISSUE: ' \
+'--issue=[Fetch a specific Github issue for the repository]:ISSUE:_default' \
 '--exclude-priority[Change pattern priority in case of conflict to prioritize the exclusion pattern]' \
 '--exclude-from-tree[Eclude files/folders from the source tree based on exclude patterns]' \
 '--gitignore[Don'\''t respect .gitignore file]' \
@@ -40,6 +40,7 @@ _codeprompt() {
 '--no-spinner[Whether to render the spinner]' \
 '--json[Whether to print the output as JSON. Defaults to False]' \
 '--verbose[Run in verbose mode to investigate glob pattern matching]' \
+'--no-warnings[Ignore all warnings (sensitive files, large token counts, template warnings)]' \
 '-h[Print help (see more with '\''--help'\'')]' \
 '--help[Print help (see more with '\''--help'\'')]' \
 '-V[Print version]' \
