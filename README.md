@@ -85,6 +85,7 @@ Options:
       --no-spinner           Whether to render the spinner
       --json                 Whether to print the output as JSON. Defaults to False
       --issue <ISSUE>        Fetch a specific Github issue for the repository
+      --no-warnings          Ignore all warnings (sensitive files, large token counts, template warnings)
       --verbose              Run in verbose mode to investigate glob pattern matching
   -h, --help                 Print help (see more with '--help')
   -V, --version              Print version
