@@ -1,6 +1,6 @@
 # Print an optspec for argparse to handle cmd's options that are independent of any subcommand.
 function __fish_codeprompt_global_optspecs
-	string join \n include= exclude= exclude-priority exclude-from-tree gitignore d/diff-staged u/diff-unstaged no-tokens c/encoding= o/output= l/no-line-numbers no-codeblock relative-paths no-clipboard t/template= no-spinner json issue= verbose no-warnings h/help V/version
+	string join \n include= exclude= exclude-priority exclude-from-tree literal-brackets gitignore d/diff-staged u/diff-unstaged no-tokens c/encoding= o/output= l/no-line-numbers no-codeblock relative-paths no-clipboard t/template= no-spinner json issue= verbose no-warnings h/help V/version
 end
 
 function __fish_codeprompt_needs_command
@@ -32,6 +32,7 @@ complete -c codeprompt -n "__fish_codeprompt_needs_command" -s t -l template -d 
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l issue -d 'Fetch a specific Github issue for the repository' -r
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l exclude-priority -d 'Change pattern priority in case of conflict to prioritize the exclusion pattern'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l exclude-from-tree -d 'Eclude files/folders from the source tree based on exclude patterns'
+complete -c codeprompt -n "__fish_codeprompt_needs_command" -l literal-brackets -d 'Treat `[` and `]` in include/exclude patterns as literal characters rather than glob character classes. Useful for SvelteKit/Next.js dynamic route directories like `[param]`'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l gitignore -d 'Don\'t respect .gitignore file'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -s d -l diff-staged -d 'Capture the git diff for staged changes only (equivalent to running `git diff --cached` or `git diff --staged`'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -s u -l diff-unstaged -d 'Capture the git diff for unstaged changes only (equivalent to running `git diff`)'
