@@ -26,6 +26,7 @@ _codeprompt() {
 '--issue=[Fetch a specific Github issue for the repository]:ISSUE:_default' \
 '--exclude-priority[Change pattern priority in case of conflict to prioritize the exclusion pattern]' \
 '--exclude-from-tree[Eclude files/folders from the source tree based on exclude patterns]' \
+'--literal-brackets[Treat \`\[\` and \`\]\` in include/exclude patterns as literal characters rather than glob character classes. Useful for SvelteKit/Next.js dynamic route directories like \`\[param\]\`]' \
 '--gitignore[Don'\''t respect .gitignore file]' \
 '-d[Capture the git diff for staged changes only (equivalent to running \`git diff --cached\` or \`git diff --staged\`]' \
 '--diff-staged[Capture the git diff for staged changes only (equivalent to running \`git diff --cached\` or \`git diff --staged\`]' \

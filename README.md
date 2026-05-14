@@ -71,6 +71,7 @@ Options:
       --exclude <EXCLUDE>    Glob patterns to exclude
       --exclude-priority     Change pattern priority in case of conflict to prioritize the exclusion pattern
       --exclude-from-tree    Eclude files/folders from the source tree based on exclude patterns
+      --literal-brackets     Treat `[` and `]` in patterns as literal characters (for SvelteKit `[param]` style directories)
       --gitignore            Don't respect .gitignore file
   -d, --diff-staged          Capture the git diff for staged changes only (equivalent to running `git diff --cached` or `git diff --staged`
   -u, --diff-unstaged        Capture the git diff for unstaged changes only (equivalent to running `git diff`)

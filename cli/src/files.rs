@@ -68,6 +68,8 @@ pub fn parse_comma_delim_patterns(patterns: &Option<String>) -> Vec<String> {
 /// tree.
 /// - `no_codeblock`: Whether to wrap the code in markdown code blocks.
 /// - `gitignore`: Whether or not to respect the gitignore file.
+/// - `literal_brackets`: Whether to escape `[` and `]` in patterns so they
+/// match literal characters (useful for SvelteKit/Next.js dynamic routes).
 /// - `verbose`: Whether to print the glob pattern matching for investigation.
 ///
 /// ### Returns
@@ -85,6 +87,7 @@ pub fn traverse_directory(
     exclude_from_tree: bool,
     no_codeblock: bool,
     gitignore: bool,
+    literal_brackets: bool,
 ) -> Result<(String, Vec<serde_json::Value>)> {
     debug!(
         include_patterns = ?include,
@@ -101,8 +104,8 @@ pub fn traverse_directory(
     let parent_dir = basename(&canonical_root_path);
 
     // Compile glob patterns
-    let include_patterns = compile_patterns(include)?;
-    let exclude_patterns = compile_patterns(exclude)?;
+    let include_patterns = compile_patterns(include, literal_brackets)?;
+    let exclude_patterns = compile_patterns(exclude, literal_brackets)?;
 
     let tree = WalkBuilder::new(&canonical_root_path)
         .standard_filters(false)
@@ -211,6 +214,8 @@ pub fn traverse_directory(
 /// - `exclude_priority`: Whether to give priority to the exclude patterns.
 /// - `relative_paths`: Whether to use relative paths.
 /// - `gitignore`: Whether to respect the gitignore file.
+/// - `literal_brackets`: Whether to escape `[` and `]` in patterns so they
+/// match literal characters.
 ///
 /// ### Returns
 ///
@@ -223,10 +228,11 @@ pub fn check_sensitive_files(
     exclude_priority: bool,
     relative_paths: bool,
     gitignore: bool,
+    literal_brackets: bool,
 ) -> Result<Vec<String>> {
     let canonical_root_path = root.canonicalize()?;
-    let include_patterns = compile_patterns(include)?;
-    let exclude_patterns = compile_patterns(exclude)?;
+    let include_patterns = compile_patterns(include, literal_brackets)?;
+    let exclude_patterns = compile_patterns(exclude, literal_brackets)?;
     let mut sensitive_files = Vec::new();
 
     let tree = WalkBuilder::new(&canonical_root_path)
@@ -462,12 +468,17 @@ fn wrap_content(
 }
 
 /// Compiles glob paterns into a reusable set.
-fn compile_patterns(patterns: &[String]) -> Result<HashSet<Pattern>> {
+fn compile_patterns(patterns: &[String], literal_brackets: bool) -> Result<HashSet<Pattern>> {
     patterns
         .iter()
         .map(|p| {
             let normalized = p.strip_prefix("./").unwrap_or(p);
-            Pattern::new(normalized).map_err(|e| anyhow!("Invalid pattern {}: {}", p, e))
+            let prepared = if literal_brackets {
+                escape_literal_brackets(normalized)
+            } else {
+                normalized.to_owned()
+            };
+            Pattern::new(&prepared).map_err(|e| anyhow!("Invalid pattern {}: {}", p, e))
         })
         .collect()
 }
@@ -543,4 +554,26 @@ fn in_ignore_list(path: &Path) -> bool {
         .and_then(|n| n.to_str())
         .map(|name| IGNORE_LIST.contains(&name))
         .unwrap_or(false)
+}
+
+/// Escapes literal square brackets in a glob pattern.
+///
+/// ### Arguments
+///
+/// - `pattern`: The raw glob pattern.
+///
+/// ### Returns
+///
+/// - `String`: The pattern with literal brackets escaped.
+///
+fn escape_literal_brackets(pattern: &str) -> String {
+    let mut escaped = String::with_capacity(pattern.len());
+    for ch in pattern.chars() {
+        match ch {
+            '[' => escaped.push_str("[[]"),
+            ']' => escaped.push_str("[]]"),
+            _ => escaped.push(ch),
+        }
+    }
+    escaped
 }

@@ -32,6 +32,7 @@ Register-ArgumentCompleter -Native -CommandName 'codeprompt' -ScriptBlock {
             [CompletionResult]::new('--issue', '--issue', [CompletionResultType]::ParameterName, 'Fetch a specific Github issue for the repository')
             [CompletionResult]::new('--exclude-priority', '--exclude-priority', [CompletionResultType]::ParameterName, 'Change pattern priority in case of conflict to prioritize the exclusion pattern')
             [CompletionResult]::new('--exclude-from-tree', '--exclude-from-tree', [CompletionResultType]::ParameterName, 'Eclude files/folders from the source tree based on exclude patterns')
+            [CompletionResult]::new('--literal-brackets', '--literal-brackets', [CompletionResultType]::ParameterName, 'Treat `[` and `]` in include/exclude patterns as literal characters rather than glob character classes. Useful for SvelteKit/Next.js dynamic route directories like `[param]`')
             [CompletionResult]::new('--gitignore', '--gitignore', [CompletionResultType]::ParameterName, 'Don''t respect .gitignore file')
             [CompletionResult]::new('-d', '-d', [CompletionResultType]::ParameterName, 'Capture the git diff for staged changes only (equivalent to running `git diff --cached` or `git diff --staged`')
             [CompletionResult]::new('--diff-staged', '--diff-staged', [CompletionResultType]::ParameterName, 'Capture the git diff for staged changes only (equivalent to running `git diff --cached` or `git diff --staged`')

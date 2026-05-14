@@ -33,6 +33,7 @@ impl Default for Config {
 pub struct OptionState {
     pub exclude_priority: bool,
     pub exclude_from_tree: bool,
+    pub literal_brackets: bool,
     pub diff_staged: bool,
     pub diff_unstaged: bool,
     pub gitignore: bool,
@@ -49,6 +50,7 @@ impl Default for OptionState {
         Self {
             exclude_priority: false,
             exclude_from_tree: false,
+            literal_brackets: false,
             diff_staged: false,
             diff_unstaged: false,
             gitignore: true,
@@ -67,6 +69,7 @@ impl OptionState {
         vec![
             ("Exclude Priority", &mut self.exclude_priority),
             ("Exclude From Tree", &mut self.exclude_from_tree),
+            ("Literal Brackets", &mut self.literal_brackets),
             ("Gitignore", &mut self.gitignore),
             ("Diff Staged", &mut self.diff_staged),
             ("Diff Unstaged", &mut self.diff_unstaged),
