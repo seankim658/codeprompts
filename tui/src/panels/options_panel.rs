@@ -109,6 +109,9 @@ impl Panel for OptionsPanel {
         if self.options.exclude_from_tree {
             args.push("--exclude-from-tree".to_owned());
         }
+        if self.options.literal_brackets {
+            args.push("--literal-brackets".to_owned());
+        }
         if self.options.diff_staged {
             args.push("--diff-staged".to_owned());
         }
@@ -128,7 +131,7 @@ impl Panel for OptionsPanel {
             args.push("--no-codeblock".to_owned());
         }
         if self.options.relative_paths {
-            args.push("--relative_paths".to_owned());
+            args.push("--relative-paths".to_owned());
         }
         if self.options.no_clipboard {
             args.push("--no-clipboard".to_owned());

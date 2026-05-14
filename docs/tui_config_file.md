@@ -13,6 +13,7 @@ template_dir = "path/to/your/templates/directory/"
 exclude_priority = false
 # Exclude files/folders from the source tree based on exclude patterns
 exclude_from_tree = false
+literal_brackets = false
 diff_staged = false
 diff_unstaged = false
 # Whether to respect the .gitignore file
