@@ -41,6 +41,12 @@ struct Args {
     #[arg(long, action(ArgAction::SetTrue))]
     exclude_from_tree: bool,
 
+    /// Treat `[` and `]` in include/exclude patterns as literal characters
+    /// rather than glob character classes. Useful for SvelteKit/Next.js
+    /// dynamic route directories like `[param]`.
+    #[arg(long, action(ArgAction::SetTrue))]
+    literal_brackets: bool,
+
     /// Don't respect .gitignore file.
     #[arg(long, action(ArgAction::SetFalse))]
     gitignore: bool,
@@ -188,6 +194,7 @@ async fn main() -> Result<(), Error> {
         args.exclude_priority,
         args.relative_paths,
         args.gitignore,
+        args.literal_brackets,
     )?;
 
     if !args.no_warnings
@@ -220,6 +227,7 @@ async fn main() -> Result<(), Error> {
         args.exclude_from_tree,
         args.no_codeblock,
         args.gitignore,
+        args.literal_brackets,
     );
 
     let (tree, files) = match tree_data {
