@@ -478,7 +478,7 @@ fn compile_patterns(patterns: &[String], literal_brackets: bool) -> Result<HashS
             } else {
                 normalized.to_owned()
             };
-            Pattern::new(normalized).map_err(|e| anyhow!("Invalid pattern {}: {}", p, e))
+            Pattern::new(&prepared).map_err(|e| anyhow!("Invalid pattern {}: {}", p, e))
         })
         .collect()
 }
