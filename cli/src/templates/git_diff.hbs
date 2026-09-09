@@ -1,0 +1,12 @@
+Project Path: {{ absolute_code_path }}
+
+Here is the full `git diff` output.
+
+## Diff
+
+{{#if git_diff}}
+Diff:
+```
+{{git_diff}}
+```
+{{/if}}
