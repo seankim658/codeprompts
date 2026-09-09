@@ -36,7 +36,7 @@ _codeprompt() {
 '-l[Turn off line numbers in source code blocks]' \
 '--no-line-numbers[Turn off line numbers in source code blocks]' \
 '--no-codeblock[Disable wrapping code inside markdown code blocks]' \
-'--relative-paths[Use relative paths instead of absolute paths, including parent directory]' \
+'--absolute-paths[Use absolute paths instead of relative paths. Relative paths are the default]' \
 '--no-clipboard[Disable copying to clipboard]' \
 '--no-spinner[Whether to render the spinner]' \
 '--json[Whether to print the output as JSON. Defaults to False]' \

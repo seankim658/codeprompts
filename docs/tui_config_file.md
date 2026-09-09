@@ -21,7 +21,7 @@ gitignore = true
 no_tokens = false
 no_line_numbers = false
 no_codeblock = false
-relative_paths = false
+absolute_paths = false
 no_clipboard = false
 no_spinner = false
 ```

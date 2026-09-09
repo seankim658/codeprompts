@@ -42,7 +42,7 @@ Register-ArgumentCompleter -Native -CommandName 'codeprompt' -ScriptBlock {
             [CompletionResult]::new('-l', '-l', [CompletionResultType]::ParameterName, 'Turn off line numbers in source code blocks')
             [CompletionResult]::new('--no-line-numbers', '--no-line-numbers', [CompletionResultType]::ParameterName, 'Turn off line numbers in source code blocks')
             [CompletionResult]::new('--no-codeblock', '--no-codeblock', [CompletionResultType]::ParameterName, 'Disable wrapping code inside markdown code blocks')
-            [CompletionResult]::new('--relative-paths', '--relative-paths', [CompletionResultType]::ParameterName, 'Use relative paths instead of absolute paths, including parent directory')
+            [CompletionResult]::new('--absolute-paths', '--absolute-paths', [CompletionResultType]::ParameterName, 'Use absolute paths instead of relative paths. Relative paths are the default')
             [CompletionResult]::new('--no-clipboard', '--no-clipboard', [CompletionResultType]::ParameterName, 'Disable copying to clipboard')
             [CompletionResult]::new('--no-spinner', '--no-spinner', [CompletionResultType]::ParameterName, 'Whether to render the spinner')
             [CompletionResult]::new('--json', '--json', [CompletionResultType]::ParameterName, 'Whether to print the output as JSON. Defaults to False')

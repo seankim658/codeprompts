@@ -134,8 +134,8 @@ impl Panel for OptionsPanel {
         if self.options.no_codeblock {
             args.push("--no-codeblock".to_owned());
         }
-        if self.options.relative_paths {
-            args.push("--relative-paths".to_owned());
+        if self.options.absolute_paths {
+            args.push("--absolute-paths".to_owned());
         }
         if self.options.no_clipboard {
             args.push("--no-clipboard".to_owned());
