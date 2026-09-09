@@ -3,6 +3,7 @@
 //! Module that handles all file and file pathing functionality.
 
 use anyhow::{anyhow, Result};
+use codeprompt_core::is_ignored;
 use colored::Colorize;
 use glob::Pattern;
 use ignore::WalkBuilder;
@@ -31,8 +32,6 @@ const SENSITIVE_FILE_PATTERNS: &[&str] = &[
     "credentials.json",
 ];
 
-const IGNORE_LIST: &[&str] = &[".git", "node_modules", "venv"];
-
 /// Parses a comma-delimited list from the user arguments.
 ///
 /// ### Arguments
@@ -59,6 +58,7 @@ pub fn parse_comma_delim_patterns(patterns: &Option<String>) -> Vec<String> {
 /// - `root`: The path to the root directory.
 /// - `include`: The include patterns.
 /// - `exclude`: The exclude patterns.
+/// - `ignore`: Directory names to skip during the walk (matched based on final path component).
 /// - `exclude_priority`: Whether to give priority to the exclude patterns.
 /// - `no_line_numbers`: Whether to skip adding line numbers to the code sections.
 /// - `relative_paths`: Whether to use relative paths in the file tree.
@@ -79,6 +79,7 @@ pub fn traverse_directory(
     root: &Path,
     include: &[String],
     exclude: &[String],
+    ignore: &[String],
     exclude_priority: bool,
     no_line_numbers: bool,
     relative_paths: bool,
@@ -105,10 +106,12 @@ pub fn traverse_directory(
     let include_patterns = compile_patterns(include, literal_brackets)?;
     let exclude_patterns = compile_patterns(exclude, literal_brackets)?;
 
+    let ignore_names = ignore.to_vec();
+
     let tree = WalkBuilder::new(&canonical_root_path)
         .standard_filters(false)
         .git_ignore(gitignore)
-        .filter_entry(|entry| !in_ignore_list(entry.path()))
+        .filter_entry(move |entry| !is_ignored(entry.path(), &ignore_names))
         .build()
         // Filter out errors, only keep successful entries.
         .filter_map(|e| e.ok())
@@ -211,6 +214,7 @@ pub fn traverse_directory(
 /// - `root`: The path to the root directory.
 /// - `include`: The include patterns.
 /// - `exclude`: The exclude patterns.
+/// - `ignore`: Directory names to skip during the walk (matched on the final path component).
 /// - `exclude_priority`: Whether to give priority to the exclude patterns.
 /// - `relative_paths`: Whether to use relative paths.
 /// - `gitignore`: Whether to respect the gitignore file.
@@ -225,6 +229,7 @@ pub fn check_sensitive_files(
     root: &Path,
     include: &[String],
     exclude: &[String],
+    ignore: &[String],
     exclude_priority: bool,
     relative_paths: bool,
     gitignore: bool,
@@ -235,10 +240,12 @@ pub fn check_sensitive_files(
     let exclude_patterns = compile_patterns(exclude, literal_brackets)?;
     let mut sensitive_files = Vec::new();
 
+    let ignore_names = ignore.to_vec();
+
     let tree = WalkBuilder::new(&canonical_root_path)
         .standard_filters(false)
         .git_ignore(gitignore)
-        .filter_entry(|entry| !in_ignore_list(entry.path()))
+        .filter_entry(move |entry| !is_ignored(entry.path(), &ignore_names))
         .build();
 
     for entry in tree.filter_map(|e| e.ok()) {
@@ -584,23 +591,6 @@ pub fn prompt_for_sensitive_files(sensitive_files: &[String]) -> bool {
     io::stdin().read_line(&mut response).unwrap();
 
     matches!(response.trim().to_lowercase().as_str(), "y" | "yes")
-}
-
-/// Checks if a path is in the ignore list.
-///
-/// ### Arguments
-///
-/// - `path`: The path to check.
-///
-/// ### Returns
-///
-/// - `bool`: True if the path should be excluded
-///
-fn in_ignore_list(path: &Path) -> bool {
-    path.file_name()
-        .and_then(|n| n.to_str())
-        .map(|name| IGNORE_LIST.contains(&name))
-        .unwrap_or(false)
 }
 
 /// Escapes literal square brackets in a glob pattern.

@@ -322,6 +322,7 @@ dependencies = [
  "arboard",
  "clap",
  "clap_complete",
+ "codeprompt-core",
  "colored",
  "git2",
  "glob",
@@ -340,10 +341,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "codeprompt-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "dirs",
+ "serde",
+ "toml",
+]
+
+[[package]]
 name = "codeprompt-tui"
 version = "0.1.1"
 dependencies = [
  "anyhow",
+ "codeprompt-core",
  "crossterm",
  "dirs",
  "ignore",

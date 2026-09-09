@@ -20,7 +20,7 @@ impl TemplatesPanel {
         let mut templates = Vec::new();
 
         // If template directory is configured, scan for .hbs file
-        if let Some(template_dir) = &config.template_dir {
+        if let Some(template_dir) = &config.tui.template_dir {
             // Expand `~` if present
             let expanded_path = if template_dir.starts_with("~/") {
                 dirs::home_dir()

@@ -15,7 +15,7 @@ use std::path::PathBuf;
 
 /// Create standardized LLM prompts from your code.
 #[derive(Parser, Debug)]
-#[clap(name = "codeprompt", version = "0.1.6")]
+#[clap(name = "codeprompt", version = env!("CARGO_PKG_VERSION"))]
 struct Args {
     /// Subcommand for shell completion generation.
     #[command(subcommand)]
@@ -187,10 +187,23 @@ async fn main() -> Result<(), Error> {
     let include_patterns = parse_comma_delim_patterns(&args.include);
     let exclude_patterns = parse_comma_delim_patterns(&args.exclude);
 
+    let global_config = codeprompt_core::load_global_config().unwrap_or_else(|error| {
+        eprintln!(
+            "{}{}{} {}",
+            "[".bold().white(),
+            "!".bold().yellow(),
+            "]".bold().white(),
+            format!("Ignoring config file: {}", error).yellow()
+        );
+        codeprompt_core::GlobalConfig::default()
+    });
+    let ignore_names = global_config.effective_ignore();
+
     let sensitive_files = check_sensitive_files(
         &project_root,
         &include_patterns,
         &exclude_patterns,
+        &ignore_names,
         args.exclude_priority,
         !args.absolute_paths,
         args.gitignore,
@@ -221,6 +234,7 @@ async fn main() -> Result<(), Error> {
         &project_root,
         &include_patterns,
         &exclude_patterns,
+        &ignore_names,
         args.exclude_priority,
         args.no_line_numbers,
         !args.absolute_paths,
