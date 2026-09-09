@@ -131,6 +131,7 @@ pub fn traverse_directory(
                     if exclude_from_tree
                         && !include_file(
                             path,
+                            &canonical_root_path,
                             &include_patterns,
                             &exclude_patterns,
                             exclude_priority,
@@ -160,6 +161,7 @@ pub fn traverse_directory(
                 if path.is_file()
                     && include_file(
                         path,
+                        &canonical_root_path,
                         &include_patterns,
                         &exclude_patterns,
                         exclude_priority,
@@ -246,6 +248,7 @@ pub fn check_sensitive_files(
         if path.is_file()
             && include_file(
                 path,
+                &canonical_root_path,
                 &include_patterns,
                 &exclude_patterns,
                 exclude_priority,
@@ -254,7 +257,7 @@ pub fn check_sensitive_files(
             && is_sensitive_file(path)
         {
             let display_path = if relative_paths {
-                path.strip_prefix(std::env::current_dir().unwrap())
+                path.strip_prefix(&canonical_root_path)
                     .unwrap_or(path)
                     .display()
                     .to_string()
@@ -314,6 +317,7 @@ fn handle_special_case(p: &Path) -> String {
 /// ### Arguments
 ///
 /// - `path`: The path to the file to check.
+/// - `root`: The canonical root directory, used to compute the relative path.
 /// - `include_patterns`: The pre-compiled include patterns.
 /// - `exclude_patterns`: The pre-compiled exclude patterns.
 /// - `exclude_priority`: Whether to put precedence on the include or exclude patterns if they
@@ -326,22 +330,21 @@ fn handle_special_case(p: &Path) -> String {
 ///
 fn include_file(
     path: &Path,
+    root: &Path,
     include_patterns: &HashSet<Pattern>,
     exclude_patterns: &HashSet<Pattern>,
     exclude_priority: bool,
     relative_paths: bool,
 ) -> bool {
-    let canonical_root_path = match fs::canonicalize(path) {
+    let canonical_file_path = match fs::canonicalize(path) {
         Ok(path) => path,
         Err(e) => {
             eprintln!("Failed to canonicalize path: {}", e);
             return false;
         }
     };
-    let path_string = canonical_root_path.to_str().unwrap();
-    let relative_path = path
-        .strip_prefix(std::env::current_dir().unwrap())
-        .unwrap_or(path);
+    let path_string = canonical_file_path.to_str().unwrap();
+    let relative_path = path.strip_prefix(root).unwrap_or(path);
     let relative_path_string = relative_path.to_str().unwrap();
 
     debug!("----------------------------------------------------------------");
