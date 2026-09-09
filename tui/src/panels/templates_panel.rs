@@ -56,35 +56,6 @@ impl TemplatesPanel {
         })
     }
 
-    fn next(&mut self) {
-        let i = match self.interaction_state.selected() {
-            Some(i) => {
-                // +1 for "None" option at the start
-                if i >= self.templates.len() {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.interaction_state.select(Some(i));
-    }
-
-    fn previous(&mut self) {
-        let i = match self.interaction_state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.templates.len()
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.interaction_state.select(Some(i));
-    }
-
     fn select_template(&mut self) {
         if let Some(i) = self.interaction_state.selected() {
             // Index 0 is "None", so subtract 1 from index when selecting template
@@ -99,13 +70,31 @@ impl TemplatesPanel {
 
 impl Panel for TemplatesPanel {
     fn handle_input(&mut self, key: KeyEvent) -> Result<()> {
-        match key.code {
-            KeyCode::Char('j') => self.next(),
-            KeyCode::Char('k') => self.previous(),
-            KeyCode::Enter => self.select_template(),
-            _ => {}
+        if key.code == KeyCode::Enter {
+            self.select_template();
         }
         Ok(())
+    }
+
+    fn move_down(&mut self, count: usize) {
+        let last = self.templates.len();
+        let current = self.interaction_state.selected().unwrap_or(0);
+        self.interaction_state
+            .select(Some((current + count).min(last)));
+    }
+
+    fn move_up(&mut self, count: usize) {
+        let current = self.interaction_state.selected().unwrap_or(0);
+        self.interaction_state
+            .select(Some(current.saturating_sub(count)));
+    }
+
+    fn jump_to_top(&mut self) {
+        self.interaction_state.select(Some(0));
+    }
+
+    fn jump_to_bottom(&mut self) {
+        self.interaction_state.select(Some(self.templates.len()));
     }
 
     fn draw(&mut self, frame: &mut ratatui::Frame, area: Rect, is_active: bool) {

@@ -1,3 +1,4 @@
+use crate::input::InputState;
 use crate::panels::Panel;
 use crate::prelude::{handle_input, ui, Config, FileTree, OptionsPanel, TemplatesPanel};
 use anyhow::Result;
@@ -38,6 +39,8 @@ pub struct App {
     pub focused_button: usize,
     /// Whether to show the help popup
     show_help: bool,
+    /// In-progress vim-style key input
+    pub input: InputState,
 }
 
 impl App {
@@ -57,6 +60,7 @@ impl App {
             config,
             focused_button: 0,
             show_help: false,
+            input: InputState::default(),
         })
     }
 

@@ -1,4 +1,3 @@
-use crate::handler::{MOVE_DOWN, MOVE_UP};
 use crate::prelude::{Config, Panel};
 use crate::theme;
 use anyhow::Result;
@@ -12,7 +11,6 @@ use ratatui::widgets::{Block, Borders};
 use ratatui::Frame;
 use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
-use std::time::{Duration, Instant};
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 
 const INCLUDE_KEY: char = 'i';
@@ -167,12 +165,6 @@ pub struct FileTree {
     walk: Option<WalkResult>,
     /// Cache the file tree so its not redrawn on every frame
     cached_items: Option<Vec<TreeItem<'static, String>>>,
-    /// Holds the last key press, used for double key keybinds
-    last_key_press: Option<char>,
-    /// Key press time, used for tracking double key keybinds
-    key_press_time: Instant,
-    /// Key timeout for double presses, used for tracking double key keybinds
-    key_timeout: Duration,
 }
 
 impl FileTree {
@@ -189,9 +181,6 @@ impl FileTree {
             ignore: config.global.effective_ignore(),
             walk: None,
             cached_items: None,
-            last_key_press: None,
-            key_press_time: Instant::now(),
-            key_timeout: Duration::from_millis(500),
         })
     }
 
@@ -315,17 +304,6 @@ impl FileTree {
         }
     }
 
-    /// Jump to the top of the tree
-    fn jump_to_top(&mut self) {
-        self.state.select_first();
-    }
-
-    /// Jump to the bottom of the tree
-    fn jump_to_bottom(&mut self) {
-        self.ensure_items();
-        self.state.select_last();
-    }
-
     /// Close all open nodes in the tree
     fn close_all_nodes(&mut self) {
         self.state.close_all();
@@ -336,52 +314,36 @@ impl FileTree {
 impl Panel for FileTree {
     fn handle_input(&mut self, key: KeyEvent) -> Result<()> {
         match key.code {
-            KeyCode::Char('g') => {
-                let now = Instant::now();
-                if let Some('g') = self.last_key_press {
-                    if now.duration_since(self.key_press_time) < self.key_timeout {
-                        self.jump_to_top();
-                        self.last_key_press = None;
-                        return Ok(());
-                    }
-                }
-                self.last_key_press = Some('g');
-                self.key_press_time = now;
-            }
-            KeyCode::Char('G') => {
-                self.jump_to_bottom();
-                self.last_key_press = None;
-            }
-            KeyCode::Char('c') => {
-                self.close_all_nodes();
-                self.last_key_press = None;
-            }
-            KeyCode::Char(MOVE_DOWN) => {
-                self.state.key_down();
-                self.last_key_press = None;
-            }
-            KeyCode::Char(MOVE_UP) => {
-                self.state.key_up();
-                self.last_key_press = None;
-            }
+            KeyCode::Char('c') => self.close_all_nodes(),
             KeyCode::Enter => {
                 self.state.toggle_selected();
-                self.last_key_press = None;
             }
-            KeyCode::Char(INCLUDE_KEY) => {
-                self.toggle_include();
-                self.last_key_press = None;
-            }
-            KeyCode::Char(EXCLUDE_KEY) => {
-                self.toggle_exclude();
-                self.last_key_press = None;
-            }
-            _ => {
-                self.last_key_press = None;
-            }
+            KeyCode::Char(INCLUDE_KEY) => self.toggle_include(),
+            KeyCode::Char(EXCLUDE_KEY) => self.toggle_exclude(),
+            _ => {}
         }
-
         Ok(())
+    }
+
+    fn move_down(&mut self, count: usize) {
+        for _ in 0..count {
+            self.state.key_down();
+        }
+    }
+
+    fn move_up(&mut self, count: usize) {
+        for _ in 0..count {
+            self.state.key_up();
+        }
+    }
+
+    fn jump_to_top(&mut self) {
+        self.state.select_first();
+    }
+
+    fn jump_to_bottom(&mut self) {
+        self.ensure_items();
+        self.state.select_last();
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect, is_active: bool) {

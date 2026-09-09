@@ -13,4 +13,12 @@ pub trait Panel {
     fn draw(&mut self, frame: &mut Frame, area: Rect, is_active: bool);
 
     fn get_command_args(&self) -> Vec<String>;
+
+    fn move_down(&mut self, count: usize);
+
+    fn move_up(&mut self, count: usize);
+
+    fn jump_to_top(&mut self);
+
+    fn jump_to_bottom(&mut self);
 }

@@ -24,36 +24,6 @@ impl OptionsPanel {
         }
     }
 
-    fn next(&mut self) {
-        let options_len = self.options.num();
-        let i = match self.interaction_state.selected() {
-            Some(i) => {
-                if i >= options_len - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.interaction_state.select(Some(i));
-    }
-
-    fn previous(&mut self) {
-        let options_len = self.options.num();
-        let i = match self.interaction_state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    options_len - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.interaction_state.select(Some(i));
-    }
-
     fn toggle_selected(&mut self) {
         if let Some(i) = self.interaction_state.selected() {
             if let Some((_, value)) = self.options.options_iter_mut().get_mut(i) {
@@ -69,13 +39,37 @@ impl OptionsPanel {
 
 impl Panel for OptionsPanel {
     fn handle_input(&mut self, key: KeyEvent) -> Result<()> {
-        match key.code {
-            KeyCode::Char('j') => self.next(),
-            KeyCode::Char('k') => self.previous(),
-            KeyCode::Enter => self.toggle_selected(),
-            _ => {}
+        if key.code == KeyCode::Enter {
+            self.toggle_selected();
         }
         Ok(())
+    }
+
+    fn move_down(&mut self, count: usize) {
+        let len = self.options.num();
+        if len == 0 {
+            return;
+        }
+        let current = self.interaction_state.selected().unwrap_or(0);
+        self.interaction_state
+            .select(Some((current + count).min(len - 1)));
+    }
+
+    fn move_up(&mut self, count: usize) {
+        let current = self.interaction_state.selected().unwrap_or(0);
+        self.interaction_state
+            .select(Some(current.saturating_sub(count)));
+    }
+
+    fn jump_to_top(&mut self) {
+        self.interaction_state.select(Some(0));
+    }
+
+    fn jump_to_bottom(&mut self) {
+        let len = self.options.num();
+        if len > 0 {
+            self.interaction_state.select(Some(len - 1));
+        }
     }
 
     fn draw(&mut self, frame: &mut ratatui::Frame, area: Rect, is_active: bool) {
