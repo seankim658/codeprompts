@@ -1,6 +1,6 @@
 # Print an optspec for argparse to handle cmd's options that are independent of any subcommand.
 function __fish_codeprompt_global_optspecs
-	string join \n include= exclude= exclude-priority exclude-from-tree literal-brackets gitignore d/diff-staged u/diff-unstaged no-tokens c/encoding= o/output= l/no-line-numbers no-codeblock relative-paths no-clipboard t/template= no-spinner json issue= verbose no-warnings h/help V/version
+	string join \n include= exclude= exclude-priority exclude-from-tree literal-brackets gitignore d/diff-staged u/diff-unstaged no-tokens c/encoding= o/output= l/no-line-numbers no-codeblock absolute-paths no-clipboard t/template= no-spinner json issue= verbose no-warnings h/help V/version
 end
 
 function __fish_codeprompt_needs_command
@@ -39,7 +39,7 @@ complete -c codeprompt -n "__fish_codeprompt_needs_command" -s u -l diff-unstage
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l no-tokens -d 'Don\'t display approximate token count of the genrated prompt'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -s l -l no-line-numbers -d 'Turn off line numbers in source code blocks'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l no-codeblock -d 'Disable wrapping code inside markdown code blocks'
-complete -c codeprompt -n "__fish_codeprompt_needs_command" -l relative-paths -d 'Use relative paths instead of absolute paths, including parent directory'
+complete -c codeprompt -n "__fish_codeprompt_needs_command" -l absolute-paths -d 'Use absolute paths instead of relative paths. Relative paths are the default'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l no-clipboard -d 'Disable copying to clipboard'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l no-spinner -d 'Whether to render the spinner'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l json -d 'Whether to print the output as JSON. Defaults to False'

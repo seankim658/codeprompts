@@ -14,8 +14,6 @@ use std::path::Path;
 use termtree::Tree;
 use tracing::debug;
 
-const CODE_BLOCK_TICKS: &str = "```";
-
 const SENSITIVE_FILE_PATTERNS: &[&str] = &[
     ".env",
     ".env.local",
@@ -131,6 +129,7 @@ pub fn traverse_directory(
                     if exclude_from_tree
                         && !include_file(
                             path,
+                            &canonical_root_path,
                             &include_patterns,
                             &exclude_patterns,
                             exclude_priority,
@@ -160,6 +159,7 @@ pub fn traverse_directory(
                 if path.is_file()
                     && include_file(
                         path,
+                        &canonical_root_path,
                         &include_patterns,
                         &exclude_patterns,
                         exclude_priority,
@@ -246,6 +246,7 @@ pub fn check_sensitive_files(
         if path.is_file()
             && include_file(
                 path,
+                &canonical_root_path,
                 &include_patterns,
                 &exclude_patterns,
                 exclude_priority,
@@ -254,7 +255,7 @@ pub fn check_sensitive_files(
             && is_sensitive_file(path)
         {
             let display_path = if relative_paths {
-                path.strip_prefix(std::env::current_dir().unwrap())
+                path.strip_prefix(&canonical_root_path)
                     .unwrap_or(path)
                     .display()
                     .to_string()
@@ -314,6 +315,7 @@ fn handle_special_case(p: &Path) -> String {
 /// ### Arguments
 ///
 /// - `path`: The path to the file to check.
+/// - `root`: The canonical root directory, used to compute the relative path.
 /// - `include_patterns`: The pre-compiled include patterns.
 /// - `exclude_patterns`: The pre-compiled exclude patterns.
 /// - `exclude_priority`: Whether to put precedence on the include or exclude patterns if they
@@ -326,22 +328,21 @@ fn handle_special_case(p: &Path) -> String {
 ///
 fn include_file(
     path: &Path,
+    root: &Path,
     include_patterns: &HashSet<Pattern>,
     exclude_patterns: &HashSet<Pattern>,
     exclude_priority: bool,
     relative_paths: bool,
 ) -> bool {
-    let canonical_root_path = match fs::canonicalize(path) {
+    let canonical_file_path = match fs::canonicalize(path) {
         Ok(path) => path,
         Err(e) => {
             eprintln!("Failed to canonicalize path: {}", e);
             return false;
         }
     };
-    let path_string = canonical_root_path.to_str().unwrap();
-    let relative_path = path
-        .strip_prefix(std::env::current_dir().unwrap())
-        .unwrap_or(path);
+    let path_string = canonical_file_path.to_str().unwrap();
+    let relative_path = path.strip_prefix(root).unwrap_or(path);
     let relative_path_string = relative_path.to_str().unwrap();
 
     debug!("----------------------------------------------------------------");
@@ -423,6 +424,49 @@ fn include_file(
     result
 }
 
+/// Finds the length of the longest run of consecutive backticks in `content`.
+///
+/// ### Arguments
+///
+/// - `content`: The text to scan.
+///
+/// ### Returns
+///
+/// - `usize`: The length of the longest backtick run (0 if there are none).
+///
+fn longest_backtick_run(content: &str) -> usize {
+    let mut longest = 0;
+    let mut current = 0;
+    for ch in content.chars() {
+        if ch == '`' {
+            current += 1;
+            longest = longest.max(current);
+        } else {
+            current = 0;
+        }
+    }
+    longest
+}
+
+/// Builds a Markdown code fence long enough to safely wrap `content`.
+///
+/// A fenced block is closed by a backtick run at least as long as the opening fence, so
+/// the fence must be longer than the longest backtick run inside the content. Never
+/// shorter than the standard three backticks.
+///
+/// ### Arguments
+///
+/// - `content`: The content that will be wrapped.
+///
+/// ### Returns
+///
+/// - `String`: The backtick fence to use.
+///
+fn code_fence_for(content: &str) -> String {
+    let fence_len = std::cmp::max(3, longest_backtick_run(content) + 1);
+    "`".repeat(fence_len)
+}
+
 /// Wrap the file code content into a markdown code block and add line numbers if applicable.
 ///
 /// ### Arguments
@@ -455,14 +499,17 @@ fn wrap_content(
     if no_codeblock {
         formatted_block
     } else {
-        let mut result = String::with_capacity(
-            formatted_block.len() + CODE_BLOCK_TICKS.len() * 2 + extension.len() + 2,
-        );
-        result.push_str(CODE_BLOCK_TICKS);
+        let fence = code_fence_for(content);
+        let mut result =
+            String::with_capacity(formatted_block.len() + fence.len() * 2 + extension.len() + 2);
+        result.push_str(&fence);
         result.push_str(extension);
-        result.push_str("\n");
+        result.push('\n');
         result.push_str(&formatted_block);
-        result.push_str(CODE_BLOCK_TICKS);
+        if !formatted_block.ends_with('\n') {
+            result.push('\n');
+        }
+        result.push_str(&fence);
         result
     }
 }

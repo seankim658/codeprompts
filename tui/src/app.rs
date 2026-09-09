@@ -49,7 +49,7 @@ impl App {
         Ok(Self {
             terminal,
             active_panel: ActivePanel::FileTree,
-            file_tree: FileTree::new()?,
+            file_tree: FileTree::new(&config)?,
             options: OptionsPanel::new(&config),
             templates: TemplatesPanel::new(&config)?,
             should_exit: false,
@@ -111,6 +111,7 @@ impl App {
     fn run_app(&mut self) -> Result<Option<String>> {
         // Main application loop
         while !self.should_exit {
+            self.file_tree.set_gitignore(self.options.gitignore());
             let command = self.construct_command();
 
             self.terminal.draw(|frame| {
@@ -144,7 +145,7 @@ impl App {
 
     /// Reset panel states
     pub fn reset(&mut self) -> Result<()> {
-        self.file_tree = FileTree::new()?;
+        self.file_tree = FileTree::new(&self.config)?;
         self.options = OptionsPanel::new(&self.config);
         self.templates = TemplatesPanel::new(&self.config)?;
         Ok(())

@@ -81,9 +81,9 @@ struct Args {
     #[arg(long, action(ArgAction::SetTrue))]
     no_codeblock: bool,
 
-    /// Use relative paths instead of absolute paths, including parent directory.
-    #[arg(long, action(ArgAction::SetFalse))]
-    relative_paths: bool,
+    /// Use absolute paths instead of relative paths. Relative paths are the default.
+    #[arg(long, action(ArgAction::SetTrue))]
+    absolute_paths: bool,
 
     /// Disable copying to clipboard.
     #[arg(long, action(ArgAction::SetTrue))]
@@ -192,7 +192,7 @@ async fn main() -> Result<(), Error> {
         &include_patterns,
         &exclude_patterns,
         args.exclude_priority,
-        args.relative_paths,
+        !args.absolute_paths,
         args.gitignore,
         args.literal_brackets,
     )?;
@@ -223,7 +223,7 @@ async fn main() -> Result<(), Error> {
         &exclude_patterns,
         args.exclude_priority,
         args.no_line_numbers,
-        args.relative_paths,
+        !args.absolute_paths,
         args.exclude_from_tree,
         args.no_codeblock,
         args.gitignore,

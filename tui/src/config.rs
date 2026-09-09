@@ -30,6 +30,7 @@ impl Default for Config {
 
 /// Default options that can be configured
 #[derive(Debug, Deserialize, Clone)]
+#[serde(default)]
 pub struct OptionState {
     pub exclude_priority: bool,
     pub exclude_from_tree: bool,
@@ -40,7 +41,7 @@ pub struct OptionState {
     pub no_tokens: bool,
     pub no_line_numbers: bool,
     pub no_codeblock: bool,
-    pub relative_paths: bool,
+    pub absolute_paths: bool,
     pub no_clipboard: bool,
     pub no_spinner: bool,
 }
@@ -57,7 +58,7 @@ impl Default for OptionState {
             no_tokens: false,
             no_line_numbers: false,
             no_codeblock: false,
-            relative_paths: false,
+            absolute_paths: false,
             no_clipboard: false,
             no_spinner: false,
         }
@@ -76,7 +77,7 @@ impl OptionState {
             ("No Tokens", &mut self.no_tokens),
             ("No Line Numbers", &mut self.no_line_numbers),
             ("No Codeblock", &mut self.no_codeblock),
-            ("Relative Paths", &mut self.relative_paths),
+            ("Absolute Paths", &mut self.absolute_paths),
             ("No Clipboard", &mut self.no_clipboard),
             ("No Spinner", &mut self.no_spinner),
         ]
