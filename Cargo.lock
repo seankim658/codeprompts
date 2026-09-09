@@ -346,6 +346,7 @@ dependencies = [
  "anyhow",
  "crossterm",
  "dirs",
+ "ignore",
  "ratatui",
  "serde",
  "toml",

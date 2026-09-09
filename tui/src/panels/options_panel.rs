@@ -61,6 +61,10 @@ impl OptionsPanel {
             }
         }
     }
+
+    pub fn gitignore(&self) -> bool {
+        self.options.gitignore
+    }
 }
 
 impl Panel for OptionsPanel {
