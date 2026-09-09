@@ -1,29 +1,39 @@
 use anyhow::Result;
+use codeprompt_core::GlobalConfig;
 use serde::Deserialize;
 use std::path::PathBuf;
 
-/// TUI configuration loaded from `~/.codeprompt.toml`
-#[derive(Debug, Deserialize)]
+/// TUI configuration loaded from `~/.codeprompt.toml`.
+#[derive(Debug, Default, Deserialize)]
 #[serde(default)]
 pub struct Config {
-    /// Command to run
-    pub command: String,
-    /// Path to the template directory
-    pub template_dir: Option<PathBuf>,
-    /// Default options
-    pub defaults: OptionState,
-    /// Config status
+    /// TUI-specific settings (`[tui]`).
+    pub tui: TuiConfig,
+    /// Settings shared with the CLI (`[global]`).
+    pub global: GlobalConfig,
+    /// Whether a config file was found and loaded. Not read from the file.
     #[serde(skip)]
     pub config_status: bool,
 }
 
-impl Default for Config {
+/// The `[tui]` section: settings that only affect the TUI wrapper.
+#[derive(Debug, Deserialize)]
+#[serde(default)]
+pub struct TuiConfig {
+    /// Command the TUI builds and runs or submits.
+    pub command: String,
+    /// Directory scanned for `.hbs` template files.
+    pub template_dir: Option<PathBuf>,
+    /// Default option toggles (`[tui.defaults]`).
+    pub defaults: OptionState,
+}
+
+impl Default for TuiConfig {
     fn default() -> Self {
         Self {
             command: "codeprompt".to_owned(),
             template_dir: None,
             defaults: OptionState::default(),
-            config_status: false,
         }
     }
 }
@@ -89,10 +99,17 @@ impl OptionState {
 }
 
 impl Config {
+    /// Loads the configuration from `~/.codeprompt.toml`.
+    ///
+    /// A missing file yields the default configuration with `config_status`
+    /// left false.
+    ///
+    /// ### Returns
+    ///
+    /// - `Result<Self>`: The loaded configuration, or an error if the file
+    ///   exists but cannot be read or parsed.
     pub fn load() -> Result<Self> {
-        let config_path = dirs::home_dir()
-            .ok_or_else(|| anyhow::anyhow!("Could not determine home directory"))?
-            .join(".codeprompt.toml");
+        let config_path = codeprompt_core::config_path()?;
 
         if config_path.exists() {
             let content = std::fs::read_to_string(config_path)?;
@@ -104,3 +121,4 @@ impl Config {
         }
     }
 }
+

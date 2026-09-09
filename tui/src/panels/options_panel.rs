@@ -20,7 +20,7 @@ impl OptionsPanel {
 
         Self {
             interaction_state,
-            options: config.defaults.clone(),
+            options: config.tui.defaults.clone(),
         }
     }
 

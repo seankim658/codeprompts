@@ -84,7 +84,7 @@ impl App {
     }
 
     pub fn construct_command_args(&self) -> Vec<String> {
-        let mut args = vec![self.config.command.clone(), ".".to_owned()];
+        let mut args = vec![self.config.tui.command.clone(), ".".to_owned()];
         args.extend(self.file_tree.get_command_args());
         args.extend(self.options.get_command_args());
         args.extend(self.templates.get_command_args());

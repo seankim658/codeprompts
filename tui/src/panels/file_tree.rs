@@ -1,6 +1,7 @@
 use crate::handler::{MOVE_DOWN, MOVE_UP};
 use crate::prelude::{Config, Panel};
 use anyhow::Result;
+use codeprompt_core::is_ignored;
 use crossterm::event::{KeyCode, KeyEvent};
 use ignore::WalkBuilder;
 use ratatui::layout::Rect;
@@ -26,9 +27,6 @@ pub enum EntryStatus {
     /// No explicit include/exclude status
     None,
 }
-
-/// Directories that are always skipped in the file tree, matching the CLI's ignore list.
-const IGNORE_LIST: &[&str] = &[".git", "node_modules", "venv"];
 
 /// A single entry in the cached file tree structure.
 ///
@@ -56,34 +54,27 @@ pub struct WalkResult {
     pub is_dir_index: BTreeMap<PathBuf, bool>,
 }
 
-/// Checks whether a path's final component is in the always-ignored list.
-fn in_ignore_list(path: &Path) -> bool {
-    path.file_name()
-        .and_then(|name| name.to_str())
-        .map(|name| IGNORE_LIST.contains(&name))
-        .unwrap_or(false)
-}
-
 /// Walks the repository once, honoring `.gitignore` and the ignore list.
 ///
 /// ### Arguments
 ///
 /// - `root`: The root directory to walk.
+/// - `gitignore`: Whether to respect the `.gitignore`.
+/// - `ignore`: Directory names to skip, matched on the final path component.
 ///
 /// ### Returns
 ///
 /// - `Result<WalkResult>`: The nested node tree and a flat `is_dir` lookup index.
-///
-fn build_walk(root: &Path, gitignore: bool) -> Result<WalkResult> {
+fn build_walk(root: &Path, gitignore: bool, ignore: &[String]) -> Result<WalkResult> {
     let mut nodes: Vec<FileNode> = Vec::new();
     let mut is_dir_index: BTreeMap<PathBuf, bool> = BTreeMap::new();
 
-    // Dotfiles are intentionally kept (hidden filtering stays off) so the tree matches
-    // what the CLI would include; only `.gitignore` and the ignore list prune entries.
+    let ignore_names = ignore.to_vec();
+
     let walker = WalkBuilder::new(root)
         .standard_filters(false)
         .git_ignore(gitignore)
-        .filter_entry(|entry| !in_ignore_list(entry.path()))
+        .filter_entry(move |entry| !is_ignored(entry.path(), &ignore_names))
         .build();
 
     for entry in walker.filter_map(|entry| entry.ok()) {
@@ -167,8 +158,10 @@ pub struct FileTree {
     state: TreeState<String>,
     /// State for tracking current include/exclude selections
     statuses: HashMap<PathBuf, EntryStatus>,
-    /// Whether teh cached walk honors the `.gitignore`
+    /// Whether the cached walk honors the `.gitignore`
     gitignore: bool,
+    /// Directory names skipped during the walk, resolved from `[global].ignore`
+    ignore: Vec<String>,
     /// Cached filesystem walk
     walk: Option<WalkResult>,
     /// Cache the file tree so its not redrawn on every frame
@@ -191,7 +184,8 @@ impl FileTree {
             root,
             state: TreeState::default(),
             statuses: HashMap::new(),
-            gitignore: config.defaults.gitignore,
+            gitignore: config.tui.defaults.gitignore,
+            ignore: config.global.effective_ignore(),
             walk: None,
             cached_items: None,
             last_key_press: None,
@@ -230,9 +224,9 @@ impl FileTree {
     /// Ensure the filesystem walk is cached, building if necessary
     fn ensure_walk(&mut self) {
         if self.walk.is_none() {
-            self.walk =
-                Some(
-                    build_walk(&self.root, self.gitignore).unwrap_or_else(|e| WalkResult {
+            self.walk = Some(
+                build_walk(&self.root, self.gitignore, &self.ignore).unwrap_or_else(|e| {
+                    WalkResult {
                         nodes: vec![FileNode {
                             rel_path: PathBuf::from("error"),
                             name: format!("Error: {}", e),
@@ -240,8 +234,9 @@ impl FileTree {
                             children: Vec::new(),
                         }],
                         is_dir_index: BTreeMap::new(),
-                    }),
-                );
+                    }
+                }),
+            );
         }
     }
 

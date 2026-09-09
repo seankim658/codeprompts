@@ -1,0 +1,44 @@
+# Example configuration for codeprompt.
+#
+# Every value is optional; anything you omit falls back to the default shown here.
+#
+# The file has two sections:
+#   [tui]     read only by the TUI wrapper
+#   [global]  read by BOTH the TUI and the CLI it runs
+
+[tui]
+# The command the TUI builds and runs or submits.
+command = "codeprompt"
+
+# Directory scanned for Handlebars (.hbs) templates. A leading ~ is expanded.
+# Leave unset to disable the templates panel.
+# template_dir = "~/.config/codeprompt/templates"
+
+[tui.defaults]
+# Starting state of each toggle in the TUI's Options panel.
+exclude_priority = false   # On a conflict, let exclude patterns win over include
+exclude_from_tree = false  # Drop excluded files from the source tree too
+literal_brackets = false   # Treat [ and ] in patterns as literal characters
+diff_staged = false        # Capture the staged git diff
+diff_unstaged = false      # Capture the unstaged git diff
+gitignore = true           # Respect .gitignore while walking
+no_tokens = false          # Skip the token-count estimate
+no_line_numbers = false    # Omit line numbers in code blocks
+no_codeblock = false       # Don't wrap file contents in Markdown code fences
+absolute_paths = false     # Use absolute paths instead of relative ones
+no_clipboard = false       # Don't copy the result to the clipboard
+no_spinner = false         # Don't render the progress spinner
+
+[global]
+# Directory names to skip while walking, matched on the final path component
+# (plain names, not globs). Honored by both the TUI preview and the CLI.
+#
+# Semantics are REPLACE, not merge:
+#   - omit this key entirely  -> the defaults below are used
+#   - set it                  -> your list fully replaces the defaults
+#   - set it to []            -> nothing is ignored
+#
+# Pure replace, no special cases: if you drop ".git", the walk descends into it.
+# (Binary objects are still filtered out automatically, but plain-text git files
+# like HEAD and config would then be included.)
+ignore = ["node_modules", ".git", "venv", "__pycache__"]

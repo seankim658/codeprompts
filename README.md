@@ -102,14 +102,16 @@ Currently, the included pre-defined templates are:
 
 | Template Name                                                              | Description                                                                                                                                                                |
 | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`default_template.hbs`](./src/templates/default_template.hbs)             | This is a simple default template that will structure your project path, source tree, and code blocks.                                                                     |
-| [`documentation_template.hbs`](./src/templates/documentation_template.hbs) | The documentation template creates a prompt for documenting code. The documentation guidelines are consistent with the HIVE lab guidelines and documentation requirements. |
-| [`git_commit.hbs`](./src/templates/git_commit.hbs)                         | Template for creating a concise and accurate git commit message. Can be used with both the `diff-staged` and `diff-unstaged` options.                                      |
-| [`git_issues.hbs`](./src/templates/git_issue.hbs)                          | Template for implementing changes based on a Github issue.                                                                                                                 |
-| [`code_optimization.hbs`](./src/templates/code_optimization.hbs)           | Template for optimizing code in time and space complexity.                                                                                                                 |
+| [`default_template.hbs`](./cli/src/templates/default_template.hbs)             | This is a simple default template that will structure your project path, source tree, and code blocks.                                                                     |
+| [`no_tree.hbs`](./cli/src/templates/no_tree.hbs) | The default template without the source tree. |
+| [`documentation_template.hbs`](./cli/src/templates/documentation_template.hbs) | The documentation template creates a prompt for documenting code. The documentation guidelines are consistent with the HIVE lab guidelines and documentation requirements. |
+| [`git_commit.hbs`](./cli/src/templates/git_commit.hbs)                         | Template for creating a concise and accurate git commit message. Can be used with both the `diff-staged` and `diff-unstaged` options.                                      |
+| [`git_diff.hbs`](./cli/src/templates/git_diff.hbs) | Simple template that only displays `git diff` output. Can be used with both `diff-staged` and `diff-unstaged`. |
+| [`git_issue.hbs`](./cli/src/templates/git_issue.hbs)                          | Template for implementing changes based on a Github issue.                                                                                                                 |
+| [`code_optimization.hbs`](./cli/src/templates/code_optimization.hbs)           | Template for optimizing code in time and space complexity.                                                                                                                 |
 
 ## Terminal User Interface
 
 ![TUI](./imgs/tui.png)
 
-The project also includes an optional TUI wrapper where you can provide a [config file](./docs/tui_config_file.md) to override various flags and see how the command is structured before running it.
+The project also includes an optional TUI wrapper where you can provide a [config file](./docs/config_file.md) to override various flags and see how the command is structured before running it.
