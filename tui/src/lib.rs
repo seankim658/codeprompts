@@ -9,6 +9,7 @@ pub mod handler;
 pub mod panels;
 pub mod ui;
 pub mod help;
+pub mod theme;
 
 pub mod prelude {
     pub use crate::app::{ActivePanel, App};

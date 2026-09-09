@@ -1,7 +1,8 @@
 use crate::prelude::{ActivePanel, FileTree, OptionsPanel, Panel, TemplatesPanel};
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use ratatui::style::{Color, Style};
-use ratatui::text::Line;
+use crate::theme;
+use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
+use ratatui::style::{Modifier, Style};
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 use ratatui::Frame;
 
@@ -50,16 +51,31 @@ pub fn draw(
 
 fn draw_command_preview(frame: &mut Frame, command: &str, area: Rect, user_config_found: bool) {
     let config_status = if user_config_found {
-        " • Config found"
+        "Config found"
     } else {
-        " • No config found"
+        "No config found"
     };
+
+    let title = Line::from(vec![
+        Span::styled(
+            " Command Preview ",
+            Style::default()
+                .fg(theme::ACCENT)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(
+            format!("• {} • Press ? for help ", config_status),
+            theme::muted(),
+        ),
+    ]);
 
     let preview = Paragraph::new(command)
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title(format!("Command Preview{}{}", config_status, " • Press ? for help")),
+                .border_type(theme::BORDER_TYPE)
+                .border_style(Style::default().fg(theme::MUTED))
+                .title(title),
         )
         .wrap(Wrap { trim: true });
 
@@ -105,29 +121,35 @@ fn draw_button_row(
 ) {
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Ratio(1, 4),
-            Constraint::Ratio(1, 4),
-            Constraint::Ratio(1, 4),
-            Constraint::Ratio(1, 4),
-        ])
+        .constraints([Constraint::Ratio(1, 4); 4])
         .margin(1)
         .split(area);
 
     for (i, &label) in BUTTON_LABELS.iter().enumerate() {
         let is_focused = active_panel == ActivePanel::Buttons && focused_button == i;
 
-        let style = if is_focused {
-            Style::default().fg(Color::Yellow)
-        } else {
-            Style::default()
-        };
+        // Size a pill to hug the label, then center it in its cell, so only the
+        // focused button shows a solid highlight.
+        let pill_area = centered_pill(chunks[i], label.len() as u16 + 4);
 
-        let button = Paragraph::new(Line::from(label))
-            .style(style)
-            .alignment(ratatui::layout::Alignment::Center);
+        let button = Paragraph::new(label)
+            .style(theme::button(is_focused))
+            .alignment(Alignment::Center);
 
-        frame.render_widget(button, chunks[i]);
+        frame.render_widget(button, pill_area);
+    }
+}
+
+/// Returns a `width`-wide rect centered horizontally within `cell`, clamped to
+/// the cell so it never overflows on a narrow terminal.
+fn centered_pill(cell: Rect, width: u16) -> Rect {
+    let width = width.min(cell.width);
+    let x = cell.x + cell.width.saturating_sub(width) / 2;
+    Rect {
+        x,
+        y: cell.y,
+        width,
+        height: cell.height,
     }
 }
 

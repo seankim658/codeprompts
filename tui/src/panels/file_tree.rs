@@ -1,11 +1,12 @@
 use crate::handler::{MOVE_DOWN, MOVE_UP};
 use crate::prelude::{Config, Panel};
+use crate::theme;
 use anyhow::Result;
 use codeprompt_core::is_ignored;
 use crossterm::event::{KeyCode, KeyEvent};
 use ignore::WalkBuilder;
 use ratatui::layout::Rect;
-use ratatui::style::{Color, Style};
+use ratatui::style::Style;
 use ratatui::text::Text;
 use ratatui::widgets::{Block, Borders};
 use ratatui::Frame;
@@ -262,7 +263,7 @@ impl FileTree {
 
         for node in nodes {
             let identifier = node.rel_path.to_string_lossy().into_owned();
-            let (style, prefix) = Self::entry_style(&node.rel_path, statuses, false);
+            let (style, prefix) = Self::entry_style(&node.rel_path, statuses);
             let display_name = format!("{}{}", prefix, node.name);
 
             let item = if node.is_dir {
@@ -278,26 +279,11 @@ impl FileTree {
         items
     }
 
-    /// Get an entry's display style based on its status
-    fn entry_style(
-        path: &Path,
-        statuses: &HashMap<PathBuf, EntryStatus>,
-        is_selected: bool,
-    ) -> (Style, String) {
-        let base_style = if is_selected {
-            Style::default().fg(Color::Yellow)
-        } else {
-            Style::default()
-        };
-
-        let (style, prefix) = if let Some(status) = statuses.get(path) {
-            match status {
-                EntryStatus::Included => (base_style.fg(Color::Green), "[+] "),
-                EntryStatus::Excluded => (base_style.fg(Color::Red), "[-] "),
-                EntryStatus::None => (base_style, "[ ] "),
-            }
-        } else {
-            (base_style, "[ ] ")
+    fn entry_style(path: &Path, statuses: &HashMap<PathBuf, EntryStatus>) -> (Style, String) {
+        let (style, prefix) = match statuses.get(path) {
+            Some(EntryStatus::Included) => (Style::default().fg(theme::INCLUDED), "[+] "),
+            Some(EntryStatus::Excluded) => (Style::default().fg(theme::EXCLUDED), "[-] "),
+            _ => (Style::default(), "[ ] "),
         };
 
         (style, prefix.to_owned())
@@ -401,19 +387,17 @@ impl Panel for FileTree {
     fn draw(&mut self, frame: &mut Frame, area: Rect, is_active: bool) {
         let block = Block::default()
             .borders(Borders::ALL)
-            .title("File Tree")
-            .border_style(if is_active {
-                Style::default().fg(Color::Yellow)
-            } else {
-                Style::default()
-            });
+            .border_type(theme::BORDER_TYPE)
+            .border_style(theme::border(is_active))
+            .title(" File Tree ")
+            .title_style(theme::title(is_active));
 
         self.ensure_items();
 
         let tree = Tree::new(self.cached_items.as_ref().unwrap())
             .expect("Tree items have unique identifiers")
             .block(block)
-            .highlight_style(Style::default().fg(Color::Yellow));
+            .highlight_style(theme::selection(is_active));
 
         frame.render_stateful_widget(tree, area, &mut self.state);
     }

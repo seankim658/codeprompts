@@ -1,8 +1,8 @@
 use crate::prelude::{Config, Panel};
+use crate::theme;
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::layout::Rect;
-use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, Borders, List, ListItem, ListState};
 use std::path::PathBuf;
 
@@ -111,12 +111,10 @@ impl Panel for TemplatesPanel {
     fn draw(&mut self, frame: &mut ratatui::Frame, area: Rect, is_active: bool) {
         let block = Block::default()
             .borders(Borders::ALL)
-            .title("Templates")
-            .border_style(if is_active {
-                Style::default().fg(Color::Yellow)
-            } else {
-                Style::default()
-            });
+            .border_type(theme::BORDER_TYPE)
+            .border_style(theme::border(is_active))
+            .title(" Templates ")
+            .title_style(theme::title(is_active));
 
         // Start with "None" option
         let mut items = vec![ListItem::new(format!(
@@ -150,7 +148,7 @@ impl Panel for TemplatesPanel {
 
         let list = List::new(items)
             .block(block)
-            .highlight_style(Style::default().fg(Color::Yellow));
+            .highlight_style(theme::selection(is_active));
 
         frame.render_stateful_widget(list, area, &mut self.interaction_state);
     }
