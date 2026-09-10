@@ -1,17 +1,18 @@
-use crate::gutter::GutterMode;
+use crate::gutter::{self, GutterMode};
 use crate::prelude::{Config, Panel};
 use crate::theme;
 use anyhow::Result;
 use codeprompt_core::is_ignored;
 use crossterm::event::{KeyCode, KeyEvent};
 use ignore::WalkBuilder;
-use ratatui::layout::Rect;
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::Style;
 use ratatui::text::Text;
 use ratatui::widgets::{Block, Borders};
 use ratatui::Frame;
 use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
+use std::usize;
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 
 const INCLUDE_KEY: char = 'i';
@@ -347,7 +348,7 @@ impl Panel for FileTree {
         self.state.select_last();
     }
 
-    fn draw(&mut self, frame: &mut Frame, area: Rect, is_active: bool, _mode: GutterMode) {
+    fn draw(&mut self, frame: &mut Frame, area: Rect, is_active: bool, mode: GutterMode) {
         let block = Block::default()
             .borders(Borders::ALL)
             .border_type(theme::BORDER_TYPE)
@@ -356,13 +357,47 @@ impl Panel for FileTree {
             .title_style(theme::title(is_active));
 
         self.ensure_items();
+        let items = self.cached_items.as_ref().unwrap();
 
-        let tree = Tree::new(self.cached_items.as_ref().unwrap())
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
+
+        let tree = Tree::new(items)
             .expect("Tree items have unique identifiers")
-            .block(block)
             .highlight_style(theme::selection(is_active));
 
-        frame.render_stateful_widget(tree, area, &mut self.state);
+        if !mode.is_visible() {
+            frame.render_stateful_widget(tree, inner, &mut self.state);
+            return;
+        }
+
+        let (total, cursor) = {
+            let flattened = self.state.flatten(items);
+            let selected = self.state.selected().to_vec();
+            let cursor = flattened
+                .iter()
+                .position(|row| row.identifier == selected)
+                .unwrap_or(0);
+            (flattened.len(), cursor)
+        };
+
+        let columns = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Length(gutter::column_width(total) as u16),
+                Constraint::Min(0),
+            ])
+            .split(inner);
+
+        frame.render_stateful_widget(tree, columns[1], &mut self.state);
+
+        gutter::GutterColumn {
+            mode,
+            offset: self.state.get_offset(),
+            cursor,
+            total,
+        }
+        .draw(frame, columns[0]);
     }
 
     fn get_command_args(&self) -> Vec<String> {

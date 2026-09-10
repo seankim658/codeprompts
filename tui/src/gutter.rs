@@ -1,5 +1,11 @@
 //! Line-number gutter shared by the TUI panels.
 
+use crate::theme;
+use ratatui::layout::Rect;
+use ratatui::text::{Line, Span};
+use ratatui::widgets::Paragraph;
+use ratatui::Frame;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GutterMode {
     /// No gutter is drawn.
@@ -52,5 +58,51 @@ pub fn cell(mode: GutterMode, index: usize, cursor: usize, width: usize) -> Stri
         format!("{n:<width$} ")
     } else {
         format!("{n:>width$} ")
+    }
+}
+
+const MIN_GUTTER_DIGITS: usize = 2;
+fn gutter_digits(total: usize) -> usize {
+    number_width(total).max(MIN_GUTTER_DIGITS)
+}
+
+pub fn column_width(total: usize) -> usize {
+    gutter_digits(total) + 1
+}
+
+/// A synced gutter column, painted beside a list or tree in its own screen
+/// column.
+pub struct GutterColumn {
+    /// The active gutter mode.
+    pub mode: GutterMode,
+    /// Index of the first visible row (the widget's scroll offset).
+    pub offset: usize,
+    /// Index of the cursor row, anchoring the relative/hybrid numbers.
+    pub cursor: usize,
+    /// Total number of rows, used to clamp painting to real content.
+    pub total: usize,
+}
+
+impl GutterColumn {
+    pub fn draw(&self, frame: &mut Frame, area: Rect) {
+        let digits = gutter_digits(self.total);
+        let height = area.height as usize;
+        let last = (self.offset + height).min(self.total);
+
+        let lines: Vec<Line> = (self.offset..last)
+            .map(|index| {
+                let style = if index == self.cursor {
+                    theme::gutter_current()
+                } else {
+                    theme::gutter()
+                };
+                Line::from(Span::styled(
+                    cell(self.mode, index, self.cursor, digits),
+                    style,
+                ))
+            })
+            .collect();
+
+        frame.render_widget(Paragraph::new(lines), area);
     }
 }

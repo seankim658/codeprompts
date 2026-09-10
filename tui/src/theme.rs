@@ -15,7 +15,7 @@ pub const INACTIVE: Color = Color::DarkGray;
 /// Secondary text: hints, the line-number gutter, status-bar details.
 pub const MUTED: Color = Color::Gray;
 /// line-number gutter color for rows away from the cusor.
-pub const GUTTER: Color = Color::Gray;
+pub const GUTTER: Color = Color::DarkGray;
 /// Line-number gutter color for the cursor row.
 pub const GUTTER_CURRENT: Color = Color::White;
 

@@ -3,8 +3,7 @@ use crate::prelude::{Config, OptionState, Panel};
 use crate::theme;
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::layout::Rect;
-use ratatui::text::{Line, Span};
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::widgets::{Block, Borders, List, ListItem, ListState};
 
 pub struct OptionsPanel {
@@ -82,34 +81,43 @@ impl Panel for OptionsPanel {
             .title(" Options ")
             .title_style(theme::title(is_active));
 
-        let cursor = self.interaction_state.selected().unwrap_or(0);
-        let width = gutter::number_width(self.options.num());
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
 
-        let items = self
+        let items: Vec<ListItem> = self
             .options
             .options_iter_mut()
             .into_iter()
-            .enumerate()
-            .map(|(index, (name, value))| {
-                let content = format!("[{}] {}", if *value { "x" } else { " " }, name);
-                let gutter_cell = gutter::cell(mode, index, cursor, width);
-                let gutter_style = if index == cursor {
-                    theme::gutter_current()
-                } else {
-                    theme::gutter()
-                };
-                ListItem::new(Line::from(vec![
-                    Span::styled(gutter_cell, gutter_style),
-                    Span::raw(content),
-                ]))
+            .map(|(name, value)| {
+                ListItem::new(format!("[{}] {}", if *value { "x" } else { " " }, name))
             })
-            .collect::<Vec<_>>();
+            .collect();
+        let total = items.len();
 
-        let list = List::new(items)
-            .block(block)
-            .highlight_style(theme::selection(is_active));
+        let list = List::new(items).highlight_style(theme::selection(is_active));
 
-        frame.render_stateful_widget(list, area, &mut self.interaction_state);
+        if !mode.is_visible() {
+            frame.render_stateful_widget(list, inner, &mut self.interaction_state);
+            return;
+        }
+
+        let columns = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Length(gutter::column_width(total) as u16),
+                Constraint::Min(0),
+            ])
+            .split(inner);
+
+        frame.render_stateful_widget(list, columns[1], &mut self.interaction_state);
+
+        gutter::GutterColumn {
+            mode,
+            offset: self.interaction_state.offset(),
+            cursor: self.interaction_state.selected().unwrap_or(0),
+            total,
+        }
+        .draw(frame, columns[0]);
     }
 
     fn get_command_args(&self) -> Vec<String> {
