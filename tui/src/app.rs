@@ -116,6 +116,8 @@ impl App {
         // Main application loop
         while !self.should_exit {
             self.file_tree.set_gitignore(self.options.gitignore());
+            self.file_tree
+                .set_exclude_priority(self.options.exclude_priority());
             let command = self.construct_command();
             let gutter = self.config.tui.gutter_mode();
 

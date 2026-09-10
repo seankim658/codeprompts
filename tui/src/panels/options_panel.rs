@@ -36,6 +36,10 @@ impl OptionsPanel {
     pub fn gitignore(&self) -> bool {
         self.options.gitignore
     }
+
+    pub fn exclude_priority(&self) -> bool {
+        self.options.exclude_priority
+    }
 }
 
 impl Panel for OptionsPanel {
