@@ -1,21 +1,27 @@
-use crate::handler::{MOVE_DOWN, MOVE_UP};
+use crate::gutter::{self, GutterMode};
 use crate::prelude::{Config, Panel};
+use crate::theme;
 use anyhow::Result;
 use codeprompt_core::is_ignored;
 use crossterm::event::{KeyCode, KeyEvent};
 use ignore::WalkBuilder;
-use ratatui::layout::Rect;
-use ratatui::style::{Color, Style};
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui::style::{Modifier, Style};
 use ratatui::text::Text;
 use ratatui::widgets::{Block, Borders};
 use ratatui::Frame;
 use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
-use std::time::{Duration, Instant};
+use std::usize;
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 
 const INCLUDE_KEY: char = 'i';
 const EXCLUDE_KEY: char = 'x';
+
+const GLYPH_INCLUDED: &str = "[+] ";
+const GLYPH_EXCLUDED: &str = "[-] ";
+const GLYPH_CONFLICT: &str = "[!] ";
+const GLYPH_NONE: &str = "[ ] ";
 
 /// File tree entry status
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -26,6 +32,72 @@ pub enum EntryStatus {
     Excluded,
     /// No explicit include/exclude status
     None,
+}
+
+/// The effective display status of an entry after inheitance.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ResolvedStatus {
+    /// The effective status after applying inheritance and conflict resolution.
+    status: EntryStatus,
+    /// True if this entry was marked directly rather than inheriting its status.
+    explicit: bool,
+    /// True if an include signal and an exclude signal both applied.
+    conflict: bool,
+}
+
+/// Resolves the effective status of a single entry.
+///
+/// ### Arguments
+///
+/// - `own`: The entry's own explicitly-set status.
+/// - `anc_include`: Whether any ancestor directory is explicitly included.
+/// - `anc_exclude`: Whether any ancestor directory is explicitly excluded.
+/// - `exclude_priority`: Whether exclude wins over include on a conflict.
+/// - `has_any_include`: Whether any entry in the tree is explicitly included.
+///
+/// ### Returns
+///
+/// - `ResolvedStatus`: The effective status and the context needed to render it.
+fn resolve_status(
+    own: &EntryStatus,
+    anc_include: bool,
+    anc_exclude: bool,
+    exclude_priority: bool,
+    has_any_include: bool,
+) -> ResolvedStatus {
+    let include_signal = matches!(own, EntryStatus::Included) || anc_include;
+    let exclude_signal = matches!(own, EntryStatus::Excluded) || anc_exclude;
+
+    let (status, conflict) = match (include_signal, exclude_signal) {
+        (true, true) => {
+            let winner = if exclude_priority {
+                EntryStatus::Excluded
+            } else {
+                EntryStatus::Included
+            };
+            (winner, true)
+        }
+        (true, false) => (EntryStatus::Included, false),
+        (false, true) => (EntryStatus::Excluded, false),
+        (false, false) if has_any_include => (EntryStatus::Excluded, false),
+        (false, false) => (EntryStatus::None, false),
+    };
+
+    ResolvedStatus {
+        status,
+        explicit: !matches!(own, EntryStatus::None),
+        conflict,
+    }
+}
+
+/// Read-only context shared across the whole `build_tree_items` recursion.
+struct StyleContext<'a> {
+    /// The explicit include/exclude marks.
+    statuses: &'a HashMap<PathBuf, EntryStatus>,
+    /// Whether the exclude wins over include on a conflict.
+    exclude_priority: bool,
+    /// Whether any entry in the tree is explicitly included (include-only mode).
+    has_any_include: bool,
 }
 
 /// A single entry in the cached file tree structure.
@@ -160,18 +232,14 @@ pub struct FileTree {
     statuses: HashMap<PathBuf, EntryStatus>,
     /// Whether the cached walk honors the `.gitignore`
     gitignore: bool,
+    /// Whether exclude patterns win over include patterns on a conflict.
+    exclude_priority: bool,
     /// Directory names skipped during the walk, resolved from `[global].ignore`
     ignore: Vec<String>,
     /// Cached filesystem walk
     walk: Option<WalkResult>,
     /// Cache the file tree so its not redrawn on every frame
     cached_items: Option<Vec<TreeItem<'static, String>>>,
-    /// Holds the last key press, used for double key keybinds
-    last_key_press: Option<char>,
-    /// Key press time, used for tracking double key keybinds
-    key_press_time: Instant,
-    /// Key timeout for double presses, used for tracking double key keybinds
-    key_timeout: Duration,
 }
 
 impl FileTree {
@@ -185,12 +253,10 @@ impl FileTree {
             state: TreeState::default(),
             statuses: HashMap::new(),
             gitignore: config.tui.defaults.gitignore,
+            exclude_priority: config.tui.defaults.exclude_priority,
             ignore: config.global.effective_ignore(),
             walk: None,
             cached_items: None,
-            last_key_press: None,
-            key_press_time: Instant::now(),
-            key_timeout: Duration::from_millis(500),
         })
     }
 
@@ -221,6 +287,14 @@ impl FileTree {
         }
     }
 
+    /// Keep the exclude-priority tint in sync with the optional panel.
+    pub fn set_exclude_priority(&mut self, exclude_priority: bool) {
+        if self.exclude_priority != exclude_priority {
+            self.exclude_priority = exclude_priority;
+            self.invalidate_cache();
+        }
+    }
+
     /// Ensure the filesystem walk is cached, building if necessary
     fn ensure_walk(&mut self) {
         if self.walk.is_none() {
@@ -243,30 +317,71 @@ impl FileTree {
     /// Ensure the rendered items are cached
     fn ensure_items(&mut self) {
         self.ensure_walk();
-        if self.cached_items.is_none() {
-            let nodes = &self.walk.as_ref().unwrap().nodes;
-            self.cached_items = Some(Self::build_tree_items(nodes, &self.statuses));
+        if self.cached_items.is_some() {
+            return;
         }
+
+        let has_any_include = self
+            .statuses
+            .values()
+            .any(|status| *status == EntryStatus::Included);
+        let context = StyleContext {
+            statuses: &self.statuses,
+            exclude_priority: self.exclude_priority,
+            has_any_include,
+        };
+        let nodes = &self.walk.as_ref().unwrap().nodes;
+        let items = Self::build_tree_items(&context, nodes, false, false);
+        self.cached_items = Some(items);
     }
 
     /// Build the readable tree items from the cached file nodes.
     ///
-    /// This does not touch the filesystem, it walks the in-memory
-    /// `FileNode` structure and applied the current include/exclude
-    /// styling.
+    /// Walks the in-memory `FileNode` structure and applies the
+    /// resolved include/exclude styling. Ancestor signals are
+    /// threaded down so a directory mark tints its whole subtree.
+    ///
+    /// ### Arguments
+    ///
+    /// - `ctx`: Invariant styling context for this rebuild.
+    /// - `nodes`: The nodes to render at this level.
+    /// - `anc_include`: Whether an ancestor directory is explicitly included.
+    /// - `anc_exclude`: Whether an ancestor directory is explicitly excluded.
+    ///
+    /// ### Returns
+    ///
+    /// - `Vec<TreeItem<'static, String>>`: The styled tree items.
     fn build_tree_items(
+        ctx: &StyleContext,
         nodes: &[FileNode],
-        statuses: &HashMap<PathBuf, EntryStatus>,
+        anc_include: bool,
+        anc_exclude: bool,
     ) -> Vec<TreeItem<'static, String>> {
         let mut items = Vec::new();
 
         for node in nodes {
+            let own = ctx
+                .statuses
+                .get(&node.rel_path)
+                .cloned()
+                .unwrap_or(EntryStatus::None);
+            let resolved = resolve_status(
+                &own,
+                anc_include,
+                anc_exclude,
+                ctx.exclude_priority,
+                ctx.has_any_include,
+            );
+
             let identifier = node.rel_path.to_string_lossy().into_owned();
-            let (style, prefix) = Self::entry_style(&node.rel_path, statuses, false);
+            let (style, prefix) = Self::entry_style(&resolved);
             let display_name = format!("{}{}", prefix, node.name);
 
             let item = if node.is_dir {
-                let children = Self::build_tree_items(&node.children, statuses);
+                let child_include = anc_include || own == EntryStatus::Included;
+                let child_exclude = anc_exclude || own == EntryStatus::Excluded;
+                let children =
+                    Self::build_tree_items(ctx, &node.children, child_include, child_exclude);
                 TreeItem::new(identifier, Text::styled(display_name, style), children)
                     .expect("file node identifiers are unique relative paths")
             } else {
@@ -278,29 +393,33 @@ impl FileTree {
         items
     }
 
-    /// Get an entry's display style based on its status
-    fn entry_style(
-        path: &Path,
-        statuses: &HashMap<PathBuf, EntryStatus>,
-        is_selected: bool,
-    ) -> (Style, String) {
-        let base_style = if is_selected {
-            Style::default().fg(Color::Yellow)
-        } else {
-            Style::default()
+    /// Maps a resolved status to its row style and status glyph.
+    ///
+    // Colour reflects the effective outcome, a dim modifier marks an inherited
+    /// status (one the entry did not set itself), and the conflict glyph flags
+    /// an entry where an include and an exclude signal both applied.
+    ///
+    /// ### Arguments
+    ///
+    /// - `resolved`: The entry's resolved status from [`resolve_status`].
+    ///
+    /// ### Returns
+    ///
+    /// - `(Style, String)`: The text style and the leading status glyph.
+    fn entry_style(resolved: &ResolvedStatus) -> (Style, String) {
+        let (color, glyph) = match resolved.status {
+            EntryStatus::Included if resolved.conflict => (theme::INCLUDED, GLYPH_CONFLICT),
+            EntryStatus::Excluded if resolved.conflict => (theme::EXCLUDED, GLYPH_CONFLICT),
+            EntryStatus::Included => (theme::INCLUDED, GLYPH_INCLUDED),
+            EntryStatus::Excluded => (theme::EXCLUDED, GLYPH_EXCLUDED),
+            EntryStatus::None => return (Style::default(), GLYPH_NONE.to_owned()),
         };
 
-        let (style, prefix) = if let Some(status) = statuses.get(path) {
-            match status {
-                EntryStatus::Included => (base_style.fg(Color::Green), "[+] "),
-                EntryStatus::Excluded => (base_style.fg(Color::Red), "[-] "),
-                EntryStatus::None => (base_style, "[ ] "),
-            }
-        } else {
-            (base_style, "[ ] ")
-        };
-
-        (style, prefix.to_owned())
+        let mut style = Style::default().fg(color);
+        if !resolved.explicit {
+            style = style.add_modifier(Modifier::DIM);
+        }
+        (style, glyph.to_owned())
     }
 
     /// Toggle include status for the selected entry
@@ -329,17 +448,6 @@ impl FileTree {
         }
     }
 
-    /// Jump to the top of the tree
-    fn jump_to_top(&mut self) {
-        self.state.select_first();
-    }
-
-    /// Jump to the bottom of the tree
-    fn jump_to_bottom(&mut self) {
-        self.ensure_items();
-        self.state.select_last();
-    }
-
     /// Close all open nodes in the tree
     fn close_all_nodes(&mut self) {
         self.state.close_all();
@@ -350,72 +458,88 @@ impl FileTree {
 impl Panel for FileTree {
     fn handle_input(&mut self, key: KeyEvent) -> Result<()> {
         match key.code {
-            KeyCode::Char('g') => {
-                let now = Instant::now();
-                if let Some('g') = self.last_key_press {
-                    if now.duration_since(self.key_press_time) < self.key_timeout {
-                        self.jump_to_top();
-                        self.last_key_press = None;
-                        return Ok(());
-                    }
-                }
-                self.last_key_press = Some('g');
-                self.key_press_time = now;
-            }
-            KeyCode::Char('G') => {
-                self.jump_to_bottom();
-                self.last_key_press = None;
-            }
-            KeyCode::Char('c') => {
-                self.close_all_nodes();
-                self.last_key_press = None;
-            }
-            KeyCode::Char(MOVE_DOWN) => {
-                self.state.key_down();
-                self.last_key_press = None;
-            }
-            KeyCode::Char(MOVE_UP) => {
-                self.state.key_up();
-                self.last_key_press = None;
-            }
+            KeyCode::Char('c') => self.close_all_nodes(),
             KeyCode::Enter => {
                 self.state.toggle_selected();
-                self.last_key_press = None;
             }
-            KeyCode::Char(INCLUDE_KEY) => {
-                self.toggle_include();
-                self.last_key_press = None;
-            }
-            KeyCode::Char(EXCLUDE_KEY) => {
-                self.toggle_exclude();
-                self.last_key_press = None;
-            }
-            _ => {
-                self.last_key_press = None;
-            }
+            KeyCode::Char(INCLUDE_KEY) => self.toggle_include(),
+            KeyCode::Char(EXCLUDE_KEY) => self.toggle_exclude(),
+            _ => {}
         }
-
         Ok(())
     }
 
-    fn draw(&mut self, frame: &mut Frame, area: Rect, is_active: bool) {
+    fn move_down(&mut self, count: usize) {
+        for _ in 0..count {
+            self.state.key_down();
+        }
+    }
+
+    fn move_up(&mut self, count: usize) {
+        for _ in 0..count {
+            self.state.key_up();
+        }
+    }
+
+    fn jump_to_top(&mut self) {
+        self.state.select_first();
+    }
+
+    fn jump_to_bottom(&mut self) {
+        self.ensure_items();
+        self.state.select_last();
+    }
+
+    fn draw(&mut self, frame: &mut Frame, area: Rect, is_active: bool, mode: GutterMode) {
         let block = Block::default()
             .borders(Borders::ALL)
-            .title("File Tree")
-            .border_style(if is_active {
-                Style::default().fg(Color::Yellow)
-            } else {
-                Style::default()
-            });
+            .border_type(theme::BORDER_TYPE)
+            .border_style(theme::border(is_active))
+            .title(" File Tree ")
+            .title_style(theme::title(is_active));
 
         self.ensure_items();
+        let items = self.cached_items.as_ref().unwrap();
 
-        let tree = Tree::new(self.cached_items.as_ref().unwrap())
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
+
+        let tree = Tree::new(items)
             .expect("Tree items have unique identifiers")
-            .block(block)
-            .highlight_style(Style::default().fg(Color::Yellow));
+            .highlight_style(theme::selection(is_active));
 
-        frame.render_stateful_widget(tree, area, &mut self.state);
+        if !mode.is_visible() {
+            frame.render_stateful_widget(tree, inner, &mut self.state);
+            return;
+        }
+
+        let (total, cursor) = {
+            let flattened = self.state.flatten(items);
+            let selected = self.state.selected().to_vec();
+            let cursor = flattened
+                .iter()
+                .position(|row| row.identifier == selected)
+                .unwrap_or(0);
+            (flattened.len(), cursor)
+        };
+
+        let columns = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Length(gutter::column_width(total) as u16),
+                Constraint::Min(0),
+            ])
+            .split(inner);
+
+        frame.render_stateful_widget(tree, columns[1], &mut self.state);
+
+        gutter::GutterColumn {
+            mode,
+            offset: self.state.get_offset(),
+            cursor,
+            total,
+        }
+        .draw(frame, columns[0]);
     }
 
     fn get_command_args(&self) -> Vec<String> {

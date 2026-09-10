@@ -16,30 +16,32 @@ to `~/.codeprompt.toml` and adjust. Every value is optional.
 
 ## `[tui]`
 
-| Key | Default | Meaning |
-| --- | --- | --- |
-| `command` | `"codeprompt"` | The command the TUI builds and runs or submits. |
-| `template_dir` | *(unset)* | Directory scanned for `.hbs` templates; a leading `~` is expanded. Unset disables the templates panel. |
+| Key                     | Default        | Meaning                                                                                                |
+| ----------------------- | -------------- | ------------------------------------------------------------------------------------------------------ |
+| `command`               | `"codeprompt"` | The command the TUI builds and runs or submits.                                                        |
+| `template_dir`          | _(unset)_      | Directory scanned for `.hbs` templates; a leading `~` is expanded. Unset disables the templates panel. |
+| `line_numbers`          | `false`        | Show an absolute line-number gutter in the list panels.                                                |
+| `relative_line_numbers` | `false`        | Show a relative line-number gutter. Combined with `line_numbers`, gives the vim-style hybrid gutter.   |
 
 ### `[tui.defaults]`
 
 The starting state of each toggle in the Options panel. These mirror the CLI
 flags in [Options](./options.md); see that guide for what each one does.
 
-| Key | Default |
-| --- | --- |
-| `exclude_priority` | `false` |
+| Key                 | Default |
+| ------------------- | ------- |
+| `exclude_priority`  | `false` |
 | `exclude_from_tree` | `false` |
-| `literal_brackets` | `false` |
-| `diff_staged` | `false` |
-| `diff_unstaged` | `false` |
-| `gitignore` | `true` |
-| `no_tokens` | `false` |
-| `no_line_numbers` | `false` |
-| `no_codeblock` | `false` |
-| `absolute_paths` | `false` |
-| `no_clipboard` | `false` |
-| `no_spinner` | `false` |
+| `literal_brackets`  | `false` |
+| `diff_staged`       | `false` |
+| `diff_unstaged`     | `false` |
+| `gitignore`         | `true`  |
+| `no_tokens`         | `false` |
+| `no_line_numbers`   | `false` |
+| `no_codeblock`      | `false` |
+| `absolute_paths`    | `false` |
+| `no_clipboard`      | `false` |
+| `no_spinner`        | `false` |
 
 ## `[global]`
 

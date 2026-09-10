@@ -14,6 +14,11 @@ command = "codeprompt"
 # Leave unset to disable the templates panel.
 # template_dir = "~/.config/codeprompt/templates"
 
+# Line-number gutter for the list panels, to help count rows for <count>j / <count>k.
+# Both default off; both on gives the vim-style hybrid gutter.
+line_numbers = false           # Absolute line numbers
+relative_line_numbers = false  # Distances from the cursor (0 on the cursor row)
+
 [tui.defaults]
 # Starting state of each toggle in the TUI's Options panel.
 exclude_priority = false   # On a conflict, let exclude patterns win over include

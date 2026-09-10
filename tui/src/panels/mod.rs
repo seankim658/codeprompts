@@ -1,3 +1,4 @@
+use crate::gutter::GutterMode;
 use anyhow::Result;
 use crossterm::event::KeyEvent;
 use ratatui::layout::Rect;
@@ -10,7 +11,15 @@ pub mod templates_panel;
 pub trait Panel {
     fn handle_input(&mut self, key: KeyEvent) -> Result<()>;
 
-    fn draw(&mut self, frame: &mut Frame, area: Rect, is_active: bool);
+    fn draw(&mut self, frame: &mut Frame, area: Rect, is_active: bool, gutter: GutterMode);
 
     fn get_command_args(&self) -> Vec<String>;
+
+    fn move_down(&mut self, count: usize);
+
+    fn move_up(&mut self, count: usize);
+
+    fn jump_to_top(&mut self);
+
+    fn jump_to_bottom(&mut self);
 }

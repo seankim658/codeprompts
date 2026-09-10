@@ -1,8 +1,9 @@
+use crate::gutter::{self, GutterMode};
 use crate::prelude::{Config, Panel};
+use crate::theme;
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::layout::Rect;
-use ratatui::style::{Color, Style};
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::widgets::{Block, Borders, List, ListItem, ListState};
 use std::path::PathBuf;
 
@@ -56,35 +57,6 @@ impl TemplatesPanel {
         })
     }
 
-    fn next(&mut self) {
-        let i = match self.interaction_state.selected() {
-            Some(i) => {
-                // +1 for "None" option at the start
-                if i >= self.templates.len() {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.interaction_state.select(Some(i));
-    }
-
-    fn previous(&mut self) {
-        let i = match self.interaction_state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.templates.len()
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.interaction_state.select(Some(i));
-    }
-
     fn select_template(&mut self) {
         if let Some(i) = self.interaction_state.selected() {
             // Index 0 is "None", so subtract 1 from index when selecting template
@@ -99,37 +71,52 @@ impl TemplatesPanel {
 
 impl Panel for TemplatesPanel {
     fn handle_input(&mut self, key: KeyEvent) -> Result<()> {
-        match key.code {
-            KeyCode::Char('j') => self.next(),
-            KeyCode::Char('k') => self.previous(),
-            KeyCode::Enter => self.select_template(),
-            _ => {}
+        if key.code == KeyCode::Enter {
+            self.select_template();
         }
         Ok(())
     }
 
-    fn draw(&mut self, frame: &mut ratatui::Frame, area: Rect, is_active: bool) {
+    fn move_down(&mut self, count: usize) {
+        let last = self.templates.len();
+        let current = self.interaction_state.selected().unwrap_or(0);
+        self.interaction_state
+            .select(Some((current + count).min(last)));
+    }
+
+    fn move_up(&mut self, count: usize) {
+        let current = self.interaction_state.selected().unwrap_or(0);
+        self.interaction_state
+            .select(Some(current.saturating_sub(count)));
+    }
+
+    fn jump_to_top(&mut self) {
+        self.interaction_state.select(Some(0));
+    }
+
+    fn jump_to_bottom(&mut self) {
+        self.interaction_state.select(Some(self.templates.len()));
+    }
+
+    fn draw(&mut self, frame: &mut ratatui::Frame, area: Rect, is_active: bool, mode: GutterMode) {
         let block = Block::default()
             .borders(Borders::ALL)
-            .title("Templates")
-            .border_style(if is_active {
-                Style::default().fg(Color::Yellow)
-            } else {
-                Style::default()
-            });
+            .border_type(theme::BORDER_TYPE)
+            .border_style(theme::border(is_active))
+            .title(" Templates ")
+            .title_style(theme::title(is_active));
 
-        // Start with "None" option
-        let mut items = vec![ListItem::new(format!(
-            "[{}] None (default template)",
-            if self.selected_template.is_none() {
-                "x"
-            } else {
-                " "
-            }
-        ))];
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
 
-        // Add available templates
-        items.extend(self.templates.iter().map(|path| {
+        let none_marker = if self.selected_template.is_none() {
+            "x"
+        } else {
+            " "
+        };
+        let mut contents = vec![format!("[{}] None (default template)", none_marker)];
+
+        contents.extend(self.templates.iter().map(|path| {
             let is_selected = self
                 .selected_template
                 .as_ref()
@@ -141,18 +128,39 @@ impl Panel for TemplatesPanel {
                 .unwrap_or("Invalid path")
                 .to_string();
 
-            ListItem::new(format!(
-                "[{}] {}",
-                if is_selected { "x" } else { " " },
-                name
-            ))
+            format!("[{}] {}", if is_selected { "x" } else { " " }, name)
         }));
 
-        let list = List::new(items)
-            .block(block)
-            .highlight_style(Style::default().fg(Color::Yellow));
+        let total = contents.len();
+        let items: Vec<ListItem> = contents
+            .into_iter()
+            .map(|content| ListItem::new(content))
+            .collect();
 
-        frame.render_stateful_widget(list, area, &mut self.interaction_state);
+        let list = List::new(items).highlight_style(theme::selection(is_active));
+
+        if !mode.is_visible() {
+            frame.render_stateful_widget(list, inner, &mut self.interaction_state);
+            return;
+        }
+
+        let columns = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Length(gutter::column_width(total) as u16),
+                Constraint::Min(0),
+            ])
+            .split(inner);
+
+        frame.render_stateful_widget(list, columns[1], &mut self.interaction_state);
+
+        gutter::GutterColumn {
+            mode,
+            offset: self.interaction_state.offset(),
+            cursor: self.interaction_state.selected().unwrap_or(0),
+            total,
+        }
+        .draw(frame, columns[0]);
     }
 
     fn get_command_args(&self) -> Vec<String> {

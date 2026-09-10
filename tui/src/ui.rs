@@ -1,11 +1,11 @@
-use crate::prelude::{ActivePanel, FileTree, OptionsPanel, Panel, TemplatesPanel};
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use ratatui::style::{Color, Style};
-use ratatui::text::Line;
+use crate::gutter::GutterMode;
+use crate::prelude::{ActivePanel, Button, FileTree, OptionsPanel, Panel, TemplatesPanel};
+use crate::theme;
+use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
+use ratatui::style::{Modifier, Style};
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 use ratatui::Frame;
-
-const BUTTON_LABELS: [&str; 4] = ["Run", "Print", "Reset", "Exit"];
 
 pub fn draw(
     frame: &mut Frame,
@@ -14,9 +14,10 @@ pub fn draw(
     file_tree: &mut FileTree,
     templates: &mut TemplatesPanel,
     active_panel: ActivePanel,
-    focused_button: usize,
+    focused_button: Button,
     user_config_found: bool,
     show_help: bool,
+    gutter: GutterMode,
 ) {
     // Calculate height required for command preview
     let max_line_width = frame.area().width as usize - 4;
@@ -39,6 +40,7 @@ pub fn draw(
         options,
         templates,
         active_panel,
+        gutter,
         chunks[1],
     );
     draw_button_row(frame, focused_button, active_panel, chunks[2]);
@@ -50,16 +52,31 @@ pub fn draw(
 
 fn draw_command_preview(frame: &mut Frame, command: &str, area: Rect, user_config_found: bool) {
     let config_status = if user_config_found {
-        " • Config found"
+        "Config found"
     } else {
-        " • No config found"
+        "No config found"
     };
+
+    let title = Line::from(vec![
+        Span::styled(
+            " Command Preview ",
+            Style::default()
+                .fg(theme::ACCENT)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(
+            format!("• {} • Press ? for help ", config_status),
+            theme::muted(),
+        ),
+    ]);
 
     let preview = Paragraph::new(command)
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title(format!("Command Preview{}{}", config_status, " • Press ? for help")),
+                .border_type(theme::BORDER_TYPE)
+                .border_style(Style::default().fg(theme::MUTED))
+                .title(title),
         )
         .wrap(Wrap { trim: true });
 
@@ -72,6 +89,7 @@ fn draw_main_content(
     options: &mut OptionsPanel,
     templates: &mut TemplatesPanel,
     active_panel: ActivePanel,
+    gutter: GutterMode,
     area: Rect,
 ) {
     let horizontal_chunks = Layout::default()
@@ -88,46 +106,58 @@ fn draw_main_content(
         frame,
         horizontal_chunks[0],
         active_panel == ActivePanel::FileTree,
+        gutter,
     );
-    options.draw(frame, right_chunks[0], active_panel == ActivePanel::Options);
+    options.draw(
+        frame,
+        right_chunks[0],
+        active_panel == ActivePanel::Options,
+        gutter,
+    );
     templates.draw(
         frame,
         right_chunks[1],
         active_panel == ActivePanel::Templates,
+        gutter,
     );
 }
 
 fn draw_button_row(
     frame: &mut Frame,
-    focused_button: usize,
+    focused_button: Button,
     active_panel: ActivePanel,
     area: Rect,
 ) {
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Ratio(1, 4),
-            Constraint::Ratio(1, 4),
-            Constraint::Ratio(1, 4),
-            Constraint::Ratio(1, 4),
-        ])
+        .constraints([Constraint::Ratio(1, 4); 4])
         .margin(1)
         .split(area);
 
-    for (i, &label) in BUTTON_LABELS.iter().enumerate() {
-        let is_focused = active_panel == ActivePanel::Buttons && focused_button == i;
+    for (i, &button) in Button::ALL.iter().enumerate() {
+        let is_focused = active_panel == ActivePanel::Buttons && focused_button == button;
+        let label = button.label();
 
-        let style = if is_focused {
-            Style::default().fg(Color::Yellow)
-        } else {
-            Style::default()
-        };
+        let pill_area = centered_pill(chunks[i], label.len() as u16 + 4);
 
-        let button = Paragraph::new(Line::from(label))
-            .style(style)
-            .alignment(ratatui::layout::Alignment::Center);
+        let button = Paragraph::new(label)
+            .style(theme::button(is_focused))
+            .alignment(Alignment::Center);
 
-        frame.render_widget(button, chunks[i]);
+        frame.render_widget(button, pill_area);
+    }
+}
+
+/// Returns a `width`-wide rect centered horizontally within `cell`, clamped to
+/// the cell so it never overflows on a narrow terminal.
+fn centered_pill(cell: Rect, width: u16) -> Rect {
+    let width = width.min(cell.width);
+    let x = cell.x + cell.width.saturating_sub(width) / 2;
+    Rect {
+        x,
+        y: cell.y,
+        width,
+        height: cell.height,
     }
 }
 

@@ -9,9 +9,12 @@ pub mod handler;
 pub mod panels;
 pub mod ui;
 pub mod help;
+pub mod theme;
+pub mod input;
+pub mod gutter;
 
 pub mod prelude {
-    pub use crate::app::{ActivePanel, App};
+    pub use crate::app::{ActivePanel, App, Button};
     pub use crate::config::{Config, OptionState};
     pub use crate::handler::handle_input;
     pub use crate::panels::{

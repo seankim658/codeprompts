@@ -4,29 +4,36 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, Paragraph, Wrap};
 use ratatui::Frame;
 
-const HELP_TEXT: [(&str, &str); 22] = [
-    ("Navigation:", ""),
-    ("ctrl-h", "Move to left panel"),
-    ("ctrl-l", "Move to right panel"),
-    ("ctrl-j", "Move to panel below"),
-    ("ctrl-k", "Move to panel above"),
+const HELP_TEXT: [(&str, &str); 29] = [
+    ("Panels:", ""),
+    ("ctrl-h", "Focus panel left"),
+    ("ctrl-l", "Focus panel right"),
+    ("ctrl-j", "Focus panel below"),
+    ("ctrl-k", "Focus panel above"),
+    ("", ""),
+    ("Move (any panel):", ""),
+    ("j / k", "Down / up one row"),
+    ("Nj / Nk", "Down / up N rows"),
+    ("gg", "Jump to top"),
+    ("G", "Jump to bottom"),
     ("", ""),
     ("File Tree:", ""),
-    ("j/k", "Move up/down"),
     ("enter", "Expand/collapse directory"),
     ("i", "Include file/directory"),
     ("x", "Exclude file/directory"),
-    ("gg", "Jump to top of file tree"),
-    ("G", "Jump to bottom of file tree"),
     ("c", "Collapse all open nodes"),
     ("", ""),
     ("Options & Templates:", ""),
-    ("j/k", "Move up/down"),
     ("enter", "Toggle selection"),
     ("", ""),
-    ("General", ""),
-    ("?", "Toggle help"),
+    ("Buttons:", ""),
+    ("r", "Run command"),
+    ("p", "Print command"),
+    ("t", "Reset selections"),
     ("q", "Quit application"),
+    ("", ""),
+    ("General:", ""),
+    ("?", "Toggle help"),
 ];
 
 pub fn draw_help(frame: &mut Frame, area: Rect) {
