@@ -2,7 +2,7 @@
 //! responsible panel.
 
 use crate::input::InputState;
-use crate::prelude::{ActivePanel, App, Panel};
+use crate::prelude::{ActivePanel, App, Button, Panel};
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
@@ -11,6 +11,9 @@ pub const MOVE_RIGHT: char = 'l';
 pub const MOVE_DOWN: char = 'j';
 pub const MOVE_UP: char = 'k';
 const EXIT: char = 'q';
+const RUN_KEY: char = 'r';
+const PRINT_KEY: char = 'p';
+const RESET_KEY: char = 't';
 const HELP_KEY: char = '?';
 
 /// Entry point for handling generic application keyboard input events.
@@ -44,6 +47,9 @@ pub fn handle_input(app: &mut App, key: KeyEvent) -> Result<()> {
 
         // Global key handlers
         (KeyCode::Char(EXIT), KeyModifiers::NONE) => app.should_exit = true,
+        (KeyCode::Char(RUN_KEY), KeyModifiers::NONE) => run_button_action(app, Button::Run)?,
+        (KeyCode::Char(PRINT_KEY), KeyModifiers::NONE) => run_button_action(app, Button::Print)?,
+        (KeyCode::Char(RESET_KEY), KeyModifiers::NONE) => run_button_action(app, Button::Reset)?,
         (KeyCode::Char(HELP_KEY), KeyModifiers::NONE) => app.toggle_help(),
 
         // Panel navigation
@@ -119,7 +125,8 @@ fn handle_panel_input(app: &mut App, key: KeyEvent) -> Result<()> {
 fn handle_button_input(app: &mut App, key: KeyEvent) -> Result<()> {
     match key.code {
         KeyCode::Enter => {
-            handle_button_action(app)?;
+            let button = app.focused_button;
+            run_button_action(app, button)?;
         }
         KeyCode::Char(MOVE_LEFT) => {
             focus_prev_button(app);
@@ -170,36 +177,31 @@ fn navigate_down(app: &mut App) {
 /// Button Interaction
 
 fn focus_next_button(app: &mut App) {
-    app.focused_button = (app.focused_button + 1) % 4;
+    app.focused_button = app.focused_button.next();
 }
 
 fn focus_prev_button(app: &mut App) {
-    app.focused_button = (app.focused_button + 3) % 4;
+    app.focused_button = app.focused_button.prev();
 }
 
-pub fn handle_button_action(app: &mut App) -> Result<()> {
-    match app.focused_button {
-        0 => {
-            // Run
+pub fn run_button_action(app: &mut App, button: Button) -> Result<()> {
+    match button {
+        Button::Run => {
             app.should_exit = true;
             let cmd = app.construct_command();
             app.set_command(cmd);
         }
-        1 => {
-            // Submit
+        Button::Print => {
             app.should_exit = true;
             let cmd = app.construct_command();
             app.set_command(format!("!{}", cmd));
         }
-        2 => {
-            // Reset
+        Button::Reset => {
             app.reset()?;
         }
-        3 => {
-            // Exit
+        Button::Exit => {
             app.should_exit = true;
         }
-        _ => {}
     }
     Ok(())
 }

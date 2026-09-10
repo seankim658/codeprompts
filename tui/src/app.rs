@@ -17,6 +17,42 @@ pub enum ActivePanel {
     Buttons,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum Button {
+    Run,
+    Print,
+    Reset,
+    Exit,
+}
+
+impl Button {
+    pub const ALL: [Button; 4] = [Button::Run, Button::Print, Button::Reset, Button::Exit];
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Button::Run => "Run",
+            Button::Print => "Print",
+            Button::Reset => "Reset",
+            Button::Exit => "Exit",
+        }
+    }
+
+    fn index(self) -> usize {
+        Self::ALL
+            .iter()
+            .position(|&button| button == self)
+            .expect("every Button variant is listed in Button::ALL")
+    }
+
+    pub fn next(self) -> Button {
+        Self::ALL[(self.index() + 1) % Self::ALL.len()]
+    }
+
+    pub fn prev(self) -> Button {
+        Self::ALL[(self.index() + Self::ALL.len() - 1) % Self::ALL.len()]
+    }
+}
+
 /// Main application state
 pub struct App {
     /// Terminaal instance
@@ -36,7 +72,7 @@ pub struct App {
     /// Application configuration
     config: Config,
     /// Currently focused button
-    pub focused_button: usize,
+    pub focused_button: Button,
     /// Whether to show the help popup
     show_help: bool,
     /// In-progress vim-style key input
@@ -58,7 +94,7 @@ impl App {
             should_exit: false,
             command: None,
             config,
-            focused_button: 0,
+            focused_button: Button::Run,
             show_help: false,
             input: InputState::default(),
         })

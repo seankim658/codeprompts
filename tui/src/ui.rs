@@ -1,13 +1,11 @@
 use crate::gutter::GutterMode;
-use crate::prelude::{ActivePanel, FileTree, OptionsPanel, Panel, TemplatesPanel};
+use crate::prelude::{ActivePanel, Button, FileTree, OptionsPanel, Panel, TemplatesPanel};
 use crate::theme;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 use ratatui::Frame;
-
-const BUTTON_LABELS: [&str; 4] = ["Run", "Print", "Reset", "Exit"];
 
 pub fn draw(
     frame: &mut Frame,
@@ -16,7 +14,7 @@ pub fn draw(
     file_tree: &mut FileTree,
     templates: &mut TemplatesPanel,
     active_panel: ActivePanel,
-    focused_button: usize,
+    focused_button: Button,
     user_config_found: bool,
     show_help: bool,
     gutter: GutterMode,
@@ -126,7 +124,7 @@ fn draw_main_content(
 
 fn draw_button_row(
     frame: &mut Frame,
-    focused_button: usize,
+    focused_button: Button,
     active_panel: ActivePanel,
     area: Rect,
 ) {
@@ -136,11 +134,10 @@ fn draw_button_row(
         .margin(1)
         .split(area);
 
-    for (i, &label) in BUTTON_LABELS.iter().enumerate() {
-        let is_focused = active_panel == ActivePanel::Buttons && focused_button == i;
+    for (i, &button) in Button::ALL.iter().enumerate() {
+        let is_focused = active_panel == ActivePanel::Buttons && focused_button == button;
+        let label = button.label();
 
-        // Size a pill to hug the label, then center it in its cell, so only the
-        // focused button shows a solid highlight.
         let pill_area = centered_pill(chunks[i], label.len() as u16 + 4);
 
         let button = Paragraph::new(label)

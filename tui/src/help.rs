@@ -4,7 +4,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, Paragraph, Wrap};
 use ratatui::Frame;
 
-const HELP_TEXT: [(&str, &str); 24] = [
+const HELP_TEXT: [(&str, &str); 29] = [
     ("Panels:", ""),
     ("ctrl-h", "Focus panel left"),
     ("ctrl-l", "Focus panel right"),
@@ -26,9 +26,14 @@ const HELP_TEXT: [(&str, &str); 24] = [
     ("Options & Templates:", ""),
     ("enter", "Toggle selection"),
     ("", ""),
+    ("Buttons:", ""),
+    ("r", "Run command"),
+    ("p", "Print command"),
+    ("t", "Reset selections"),
+    ("q", "Quit application"),
+    ("", ""),
     ("General:", ""),
     ("?", "Toggle help"),
-    ("q", "Quit application"),
 ];
 
 pub fn draw_help(frame: &mut Frame, area: Rect) {
