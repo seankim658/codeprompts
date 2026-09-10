@@ -1,8 +1,10 @@
+use crate::gutter::{self, GutterMode};
 use crate::prelude::{Config, OptionState, Panel};
 use crate::theme;
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::layout::Rect;
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, List, ListItem, ListState};
 
 pub struct OptionsPanel {
@@ -72,7 +74,7 @@ impl Panel for OptionsPanel {
         }
     }
 
-    fn draw(&mut self, frame: &mut ratatui::Frame, area: Rect, is_active: bool) {
+    fn draw(&mut self, frame: &mut ratatui::Frame, area: Rect, is_active: bool, mode: GutterMode) {
         let block = Block::default()
             .borders(Borders::ALL)
             .border_type(theme::BORDER_TYPE)
@@ -80,12 +82,26 @@ impl Panel for OptionsPanel {
             .title(" Options ")
             .title_style(theme::title(is_active));
 
+        let cursor = self.interaction_state.selected().unwrap_or(0);
+        let width = gutter::number_width(self.options.num());
+
         let items = self
             .options
             .options_iter_mut()
             .into_iter()
-            .map(|(name, value)| {
-                ListItem::new(format!("[{}] {}", if *value { "x" } else { " " }, name))
+            .enumerate()
+            .map(|(index, (name, value))| {
+                let content = format!("[{}] {}", if *value { "x" } else { " " }, name);
+                let gutter_cell = gutter::cell(mode, index, cursor, width);
+                let gutter_style = if index == cursor {
+                    theme::gutter_current()
+                } else {
+                    theme::gutter()
+                };
+                ListItem::new(Line::from(vec![
+                    Span::styled(gutter_cell, gutter_style),
+                    Span::raw(content),
+                ]))
             })
             .collect::<Vec<_>>();
 

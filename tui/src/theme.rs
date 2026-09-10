@@ -14,6 +14,10 @@ pub const EXCLUDED: Color = Color::Red;
 pub const INACTIVE: Color = Color::DarkGray;
 /// Secondary text: hints, the line-number gutter, status-bar details.
 pub const MUTED: Color = Color::Gray;
+/// line-number gutter color for rows away from the cusor.
+pub const GUTTER: Color = Color::Gray;
+/// Line-number gutter color for the cursor row.
+pub const GUTTER_CURRENT: Color = Color::White;
 
 /// Border glyphs used by every panel. Rounded corners read as more modern than
 /// the default square border.
@@ -67,4 +71,16 @@ pub fn button(is_focused: bool) -> Style {
 /// Dim style for secondary text.
 pub fn muted() -> Style {
     Style::default().fg(MUTED)
+}
+
+/// Gutter style for a line numbe away from the cursor.
+pub fn gutter() -> Style {
+    Style::default().fg(GUTTER)
+}
+
+/// Gutter style for the cursor's own line number.
+pub fn gutter_current() -> Style {
+    Style::default()
+        .fg(GUTTER_CURRENT)
+        .add_modifier(Modifier::BOLD)
 }

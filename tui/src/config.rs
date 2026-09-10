@@ -1,3 +1,4 @@
+use crate::gutter::GutterMode;
 use anyhow::Result;
 use codeprompt_core::GlobalConfig;
 use serde::Deserialize;
@@ -24,6 +25,10 @@ pub struct TuiConfig {
     pub command: String,
     /// Directory scanned for `.hbs` template files.
     pub template_dir: Option<PathBuf>,
+    /// Show an absolute line-number gutter in the list panels.
+    pub line_numbers: bool,
+    /// Show a relative line-number gutter.
+    pub relative_line_numbers: bool,
     /// Default option toggles (`[tui.defaults]`).
     pub defaults: OptionState,
 }
@@ -33,12 +38,20 @@ impl Default for TuiConfig {
         Self {
             command: "codeprompt".to_owned(),
             template_dir: None,
+            line_numbers: false,
+            relative_line_numbers: false,
             defaults: OptionState::default(),
         }
     }
 }
 
-/// Default options that can be configured
+impl TuiConfig {
+    /// The resolved line-number gutter mode from the two config flags.
+    pub fn gutter_mode(&self) -> GutterMode {
+        GutterMode::from_flags(self.line_numbers, self.relative_line_numbers)
+    }
+}
+
 #[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
 pub struct OptionState {
@@ -121,4 +134,3 @@ impl Config {
         }
     }
 }
-

@@ -117,6 +117,7 @@ impl App {
         while !self.should_exit {
             self.file_tree.set_gitignore(self.options.gitignore());
             let command = self.construct_command();
+            let gutter = self.config.tui.gutter_mode();
 
             self.terminal.draw(|frame| {
                 ui::draw(
@@ -129,6 +130,7 @@ impl App {
                     self.focused_button,
                     self.config.config_status,
                     self.show_help,
+                    gutter,
                 );
             })?;
 

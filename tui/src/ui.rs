@@ -1,3 +1,4 @@
+use crate::gutter::GutterMode;
 use crate::prelude::{ActivePanel, FileTree, OptionsPanel, Panel, TemplatesPanel};
 use crate::theme;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
@@ -18,6 +19,7 @@ pub fn draw(
     focused_button: usize,
     user_config_found: bool,
     show_help: bool,
+    gutter: GutterMode,
 ) {
     // Calculate height required for command preview
     let max_line_width = frame.area().width as usize - 4;
@@ -40,6 +42,7 @@ pub fn draw(
         options,
         templates,
         active_panel,
+        gutter,
         chunks[1],
     );
     draw_button_row(frame, focused_button, active_panel, chunks[2]);
@@ -88,6 +91,7 @@ fn draw_main_content(
     options: &mut OptionsPanel,
     templates: &mut TemplatesPanel,
     active_panel: ActivePanel,
+    gutter: GutterMode,
     area: Rect,
 ) {
     let horizontal_chunks = Layout::default()
@@ -104,12 +108,19 @@ fn draw_main_content(
         frame,
         horizontal_chunks[0],
         active_panel == ActivePanel::FileTree,
+        gutter,
     );
-    options.draw(frame, right_chunks[0], active_panel == ActivePanel::Options);
+    options.draw(
+        frame,
+        right_chunks[0],
+        active_panel == ActivePanel::Options,
+        gutter,
+    );
     templates.draw(
         frame,
         right_chunks[1],
         active_panel == ActivePanel::Templates,
+        gutter,
     );
 }
 

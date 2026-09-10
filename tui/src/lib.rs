@@ -11,6 +11,7 @@ pub mod ui;
 pub mod help;
 pub mod theme;
 pub mod input;
+pub mod gutter;
 
 pub mod prelude {
     pub use crate::app::{ActivePanel, App};

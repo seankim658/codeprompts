@@ -1,3 +1,4 @@
+use crate::gutter::GutterMode;
 use crate::prelude::{Config, Panel};
 use crate::theme;
 use anyhow::Result;
@@ -346,7 +347,7 @@ impl Panel for FileTree {
         self.state.select_last();
     }
 
-    fn draw(&mut self, frame: &mut Frame, area: Rect, is_active: bool) {
+    fn draw(&mut self, frame: &mut Frame, area: Rect, is_active: bool, _mode: GutterMode) {
         let block = Block::default()
             .borders(Borders::ALL)
             .border_type(theme::BORDER_TYPE)
