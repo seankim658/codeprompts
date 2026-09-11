@@ -15,9 +15,14 @@ const RUN_KEY: char = 'r';
 const PRINT_KEY: char = 'p';
 const RESET_KEY: char = 't';
 const HELP_KEY: char = '?';
+const OPEN_SEARCH_KEY: char = '/';
 
 /// Entry point for handling generic application keyboard input events.
 pub fn handle_input(app: &mut App, key: KeyEvent) -> Result<()> {
+    if app.search.is_active() {
+        return app.handle_search_key(key);
+    }
+
     // A numeric prefix builds the pending count (e.g. `12j`).
     if let Some(digit) = count_digit(&app.input, key) {
         app.input.push_digit(digit);
@@ -51,6 +56,7 @@ pub fn handle_input(app: &mut App, key: KeyEvent) -> Result<()> {
         (KeyCode::Char(PRINT_KEY), KeyModifiers::NONE) => run_button_action(app, Button::Print)?,
         (KeyCode::Char(RESET_KEY), KeyModifiers::NONE) => run_button_action(app, Button::Reset)?,
         (KeyCode::Char(HELP_KEY), KeyModifiers::NONE) => app.toggle_help(),
+        (KeyCode::Char(OPEN_SEARCH_KEY), KeyModifiers::NONE) => app.open_search(),
 
         // Panel navigation
         (KeyCode::Char(MOVE_LEFT), KeyModifiers::CONTROL) => navigate_left(app),

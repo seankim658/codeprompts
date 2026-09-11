@@ -11,6 +11,8 @@ pub mod ui;
 pub mod help;
 pub mod theme;
 pub mod input;
+pub mod prompt_editor;
+pub mod search;
 pub mod gutter;
 
 pub mod prelude {

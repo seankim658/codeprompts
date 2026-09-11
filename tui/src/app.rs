@@ -1,6 +1,7 @@
 use crate::input::InputState;
 use crate::panels::Panel;
 use crate::prelude::{handle_input, ui, Config, FileTree, OptionsPanel, TemplatesPanel};
+use crate::search::{FileSearch, MarkKind, SearchAction};
 use anyhow::Result;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use crossterm::{event, execute};
@@ -77,6 +78,8 @@ pub struct App {
     show_help: bool,
     /// In-progress vim-style key input
     pub input: InputState,
+    /// Fuzzy file finder modal
+    pub search: FileSearch,
 }
 
 impl App {
@@ -97,6 +100,7 @@ impl App {
             focused_button: Button::Run,
             show_help: false,
             input: InputState::default(),
+            search: FileSearch::new(),
         })
     }
 
@@ -169,6 +173,7 @@ impl App {
                     self.config.config_status,
                     self.show_help,
                     gutter,
+                    &self.search,
                 );
             })?;
 
@@ -197,5 +202,30 @@ impl App {
 
     pub fn toggle_help(&mut self) {
         self.show_help = !self.show_help;
+    }
+
+    pub fn open_search(&mut self) {
+        self.show_help = false;
+        let candidates = self.file_tree.candidate_paths();
+        self.search.open(candidates);
+    }
+
+    pub fn handle_search_key(&mut self, key: event::KeyEvent) -> Result<()> {
+        if let Some(action) = self.search.handle_key(key) {
+            self.apply_search_action(action);
+        }
+        Ok(())
+    }
+
+    fn apply_search_action(&mut self, action: SearchAction) {
+        match action {
+            SearchAction::Mark { path, kind } => match kind {
+                MarkKind::Include => self.file_tree.toggle_include_path(&path),
+                MarkKind::Exclude => self.file_tree.toggle_exclude_path(&path),
+                MarkKind::Cycle => self.file_tree.cycle_status_path(&path),
+            },
+            SearchAction::Reveal(_path) => self.search.close(),
+            SearchAction::Close => self.search.close(),
+        }
     }
 }
