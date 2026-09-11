@@ -85,6 +85,11 @@ pub struct App {
 impl App {
     /// Create a new application instance
     pub fn new(config: Config) -> Result<Self> {
+        let search = match config.tui.escape_sequence_chars()? {
+            Some(sequence) => FileSearch::with_escape_sequence(sequence),
+            None => FileSearch::new(),
+        };
+
         let backend = CrosstermBackend::new(std::io::stdout());
         let terminal = Terminal::new(backend)?;
 
@@ -100,7 +105,7 @@ impl App {
             focused_button: Button::Run,
             show_help: false,
             input: InputState::default(),
-            search: FileSearch::new(),
+            search,
         })
     }
 

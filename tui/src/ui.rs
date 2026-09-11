@@ -72,7 +72,7 @@ fn draw_search(frame: &mut Frame, search: &FileSearch, file_tree: &FileTree, are
         .border_type(theme::BORDER_TYPE)
         .border_style(Style::default().fg(theme::ACCENT))
         .title(Span::styled(
-            " Fine Files ",
+            " Find Files ",
             Style::default()
                 .fg(theme::ACCENT)
                 .add_modifier(Modifier::BOLD),

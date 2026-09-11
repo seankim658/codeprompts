@@ -84,6 +84,13 @@ impl FileSearch {
         }
     }
 
+    pub fn with_escape_sequence(escape_sequence: Vec<char>) -> Self {
+        Self {
+            editor: PromptEditor::new().with_escape_sequence(escape_sequence),
+            ..Self::new()
+        }
+    }
+
     /// Open the finder with a fresh candidate set, resetting the query.
     pub fn open(&mut self, candidates: Vec<(PathBuf, bool)>) {
         self.candidates = candidates

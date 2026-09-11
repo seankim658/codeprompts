@@ -4,7 +4,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, Paragraph, Wrap};
 use ratatui::Frame;
 
-const HELP_TEXT: [(&str, &str); 35] = [
+const HELP_TEXT: [(&str, &str); 36] = [
     ("Panels:", ""),
     ("ctrl-h", "Focus panel left"),
     ("ctrl-l", "Focus panel right"),
@@ -40,6 +40,7 @@ const HELP_TEXT: [(&str, &str); 35] = [
     ("/", "Open fuzzy finder"),
     ("+ / - / space", "Mark result"),
     ("esc / q", "Close (normal mode)"),
+    ("(config)", "escape_sequence exits insert mode"),
 ];
 
 pub fn draw_help(frame: &mut Frame, area: Rect) {

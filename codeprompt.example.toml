@@ -19,6 +19,11 @@ command = "codeprompt"
 line_numbers = false           # Absolute line numbers
 relative_line_numbers = false  # Distances from the cursor (0 on the cursor row)
 
+# Character sequence to leave the fuzzy finder's insert mode, in addition to Esc (like
+# mapping `jj` to <Esc> in Vim). 1-4 characters, no whitespace; applies only to
+# the fuzzy finder's query. Leave unset to make Esc the only way out.
+# escape_sequence = "jj"
+
 [tui.defaults]
 # Starting state of each toggle in the TUI's Options panel.
 exclude_priority = false   # On a conflict, let exclude patterns win over include

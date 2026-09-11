@@ -98,6 +98,10 @@ pub struct PromptEditor {
     mode: Mode,
     /// A key sequence.
     pending: Pending,
+    /// An optional character sequence to exit insert mode.
+    escape_sequence: Option<Vec<char>>,
+    /// Characters typed in insert mode that match a prefix of `escape_sequence`.
+    held: Vec<char>,
 }
 
 impl Default for PromptEditor {
@@ -113,6 +117,8 @@ impl PromptEditor {
             cursor: 0,
             mode: Mode::Insert,
             pending: Pending::None,
+            escape_sequence: None,
+            held: Vec::new(),
         }
     }
 
@@ -121,6 +127,7 @@ impl PromptEditor {
         self.cursor = 0;
         self.mode = Mode::Insert;
         self.pending = Pending::None;
+        self.held.clear();
     }
 
     pub fn text(&self) -> String {
@@ -133,6 +140,15 @@ impl PromptEditor {
 
     pub fn mode(&self) -> Mode {
         self.mode
+    }
+
+    pub fn with_escape_sequence(mut self, sequence: Vec<char>) -> Self {
+        self.escape_sequence = if sequence.is_empty() {
+            None
+        } else {
+            Some(sequence)
+        };
+        self
     }
 
     /// Handles one key event, dispatching by the current mode.
@@ -164,16 +180,24 @@ impl PromptEditor {
 
     /// Handles a key while in insert mode.
     fn handle_insert_key(&mut self, key: KeyEvent) -> KeyOutcome {
-        match key.code {
-            KeyCode::Char(c) => {
-                if key.modifiers.contains(KeyModifiers::CONTROL)
-                    || key.modifiers.contains(KeyModifiers::ALT)
-                {
-                    return KeyOutcome::Consumed;
+        if let KeyCode::Char(c) = key.code {
+            let modified = key.modifiers.contains(KeyModifiers::CONTROL)
+                || key.modifiers.contains(KeyModifiers::ALT);
+            if !modified {
+                if self.escape_sequence.is_none() {
+                    self.insert_char(c);
+                    return KeyOutcome::TextChanged;
                 }
-                self.insert_char(c);
-                KeyOutcome::TextChanged
+                return if self.held.is_empty() {
+                    self.start_sequence_char(c)
+                } else {
+                    self.continue_sequence_char(c)
+                };
             }
+        }
+
+        let flushed = self.flush_held();
+        let outcome = match key.code {
             KeyCode::Backspace => self.delete_before_cursor(),
             KeyCode::Left => {
                 self.move_left();
@@ -188,7 +212,64 @@ impl PromptEditor {
                 KeyOutcome::Consumed
             }
             _ => KeyOutcome::Consumed,
+        };
+
+        if flushed && outcome == KeyOutcome::Consumed {
+            KeyOutcome::TextChanged
+        } else {
+            outcome
         }
+    }
+
+    /// Decides what a fresh character does when no sequence is in progress.
+    fn start_sequence_char(&mut self, c: char) -> KeyOutcome {
+        let sequence = self.escape_sequence.as_deref().unwrap_or_default();
+        let is_full = sequence.len() == 1 && sequence[0] == c;
+        let is_prefix = sequence.first() == Some(&c);
+        if is_full {
+            // A single-character sequence: leave insert mode at once
+            self.enter_normal_mode();
+            KeyOutcome::Consumed
+        } else if is_prefix {
+            // The character begins a longer sequence: withhold it for now
+            self.held.push(c);
+            KeyOutcome::Consumed
+        } else {
+            self.insert_char(c);
+            KeyOutcome::TextChanged
+        }
+    }
+
+    /// Extends an in-progress sequence with `c`.
+    fn continue_sequence_char(&mut self, c: char) -> KeyOutcome {
+        self.held.push(c);
+        let sequence = self.escape_sequence.as_deref().unwrap_or_default();
+        let completed = self.held.as_slice() == sequence;
+        let still_prefix = sequence.starts_with(self.held.as_slice());
+        if completed {
+            self.held.clear();
+            self.enter_normal_mode();
+            return KeyOutcome::Consumed;
+        }
+        if still_prefix {
+            return KeyOutcome::Consumed;
+        }
+        // The sequence broke
+        self.held.pop();
+        self.flush_held();
+        self.start_sequence_char(c);
+        KeyOutcome::TextChanged
+    }
+
+    fn flush_held(&mut self) -> bool {
+        if self.held.is_empty() {
+            return false;
+        }
+        let held = std::mem::take(&mut self.held);
+        for c in held {
+            self.insert_char(c);
+        }
+        true
     }
 
     /// Handles a key while in normal mode.

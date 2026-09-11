@@ -22,6 +22,12 @@ to `~/.codeprompt.toml` and adjust. Every value is optional.
 | `template_dir`          | _(unset)_      | Directory scanned for `.hbs` templates; a leading `~` is expanded. Unset disables the templates panel. |
 | `line_numbers`          | `false`        | Show an absolute line-number gutter in the list panels.                                                |
 | `relative_line_numbers` | `false`        | Show a relative line-number gutter. Combined with `line_numbers`, gives the vim-style hybrid gutter.   |
+| `escape_sequence`       | _(unset)_      | Characters that leave the finder's insert mode, added to `Esc`, e.g. `"jj"`. 1-4 non-blank chars.      |
+
+`escape_sequence` mirrors the common Vim habit of mapping something like `jj` to
+`<Esc>`. It applies only to the fuzzy finder's query line, is validated at
+startup (1-4 characters, no whitespace or control characters), and is always in
+addition to the real `Esc` key, never a replacement.
 
 ### `[tui.defaults]`
 
