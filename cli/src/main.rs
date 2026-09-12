@@ -9,11 +9,12 @@ use codeprompt::logging;
 use codeprompt::prelude::*;
 use codeprompt::validation::{validate_clipboard_copy, validate_token_count, ValidationConfig};
 use codeprompt_core::profiles::{
-    find_project_config, load_profiles, resolve, save_profile, Conflict, Profile,
+    delete_profile, find_project_config, load_profiles, resolve, save_profile, Conflict, Profile,
 };
 use colored::*;
 use git2::Repository;
 use serde_json::json;
+use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
@@ -42,7 +43,12 @@ struct Args {
     #[arg(long, value_name = "NAME", num_args = 0..=1, require_equals = true)]
     write_profile: Option<Option<String>>,
 
-    /// Overwrite an existing profile without prompting (used with --write-profile).
+    /// Delete a saved profile from the project-local `.codeprompt.toml`.
+    #[arg(long, value_name = "NAME")]
+    delete_profile: Option<String>,
+
+    /// SKip the confirmation prompt when overwriting (--write-profile) or
+    /// deleting (--delete_profile) a profile.
     #[arg(long)]
     force: bool,
 
@@ -169,6 +175,9 @@ async fn main() -> Result<(), Error> {
 
     if let Some(requested_name) = args.write_profile.clone() {
         return write_profile_command(requested_name, args.path.as_deref(), &args, &matches);
+    }
+    if let Some(name) = args.delete_profile.clone() {
+        return delete_profile_command(&name, args.path.as_deref(), args.force);
     }
 
     let project_root = match &args.subcommand {
@@ -588,13 +597,13 @@ fn format_conflicts(profile_name: &str, conflicts: &[Conflict]) -> String {
     out
 }
 
-/// Loads and resolves a saved profile against the explicit CLI flags.
-fn resolve_profile(name: &str, project_root: &Path, args: &Args, matches: &ArgMatches) -> Profile {
+/// Discover the project-local config and loads its profiles.
+fn load_project_profiles(project_root: &Path, action: &str) -> (PathBuf, HashMap<String, Profile>) {
     let config_path = match find_project_config(project_root) {
         Ok(Some(path)) => path,
         Ok(None) => exit_with_error(&format!(
-            "No .codeprompt.toml found in this repository; cannot load profile '{}'.",
-            name
+            "No .codeprompt.toml found in this repository, cannot {}.",
+            action
         )),
         Err(error) => exit_with_error(&format!("Failed to locate config file: {}", error)),
     };
@@ -604,23 +613,37 @@ fn resolve_profile(name: &str, project_root: &Path, args: &Args, matches: &ArgMa
         Err(error) => exit_with_error(&format!("{}", error)),
     };
 
+    (config_path, profiles)
+}
+
+fn profile_not_found_message(
+    name: &str,
+    config_path: &Path,
+    profiles: &HashMap<String, Profile>,
+) -> String {
+    let mut available: Vec<&str> = profiles.keys().map(String::as_str).collect();
+    available.sort_unstable();
+    let listed = if available.is_empty() {
+        "none defined".to_owned()
+    } else {
+        available.join(", ")
+    };
+    format!(
+        "Profile '{}' not found in {}. Available: {}",
+        name,
+        config_path.display(),
+        listed
+    )
+}
+
+/// Loads and resolves a saved profile against the explicit CLI flags.
+fn resolve_profile(name: &str, project_root: &Path, args: &Args, matches: &ArgMatches) -> Profile {
+    let (config_path, profiles) =
+        load_project_profiles(project_root, &format!("load profile '{}'", name));
+
     let profile = match profiles.get(name) {
         Some(profile) => profile,
-        None => {
-            let mut available: Vec<&str> = profiles.keys().map(String::as_str).collect();
-            available.sort_unstable();
-            let listed = if available.is_empty() {
-                "none defined".to_owned()
-            } else {
-                available.join(", ")
-            };
-            exit_with_error(&format!(
-                "Profile '{}' not found in {}. Available: {}",
-                name,
-                config_path.display(),
-                listed
-            ))
-        }
+        None => exit_with_error(&profile_not_found_message(name, &config_path, &profiles)),
     };
 
     let overrides = overrides_from_args(args, matches);
@@ -628,6 +651,33 @@ fn resolve_profile(name: &str, project_root: &Path, args: &Args, matches: &ArgMa
         Ok(resolved) => resolved,
         Err(conflicts) => exit_with_error(&format_conflicts(name, &conflicts)),
     }
+}
+
+fn delete_profile_command(name: &str, anchor: Option<&Path>, force: bool) -> Result<(), Error> {
+    let anchor = match anchor {
+        Some(path) => path.to_path_buf(),
+        None => std::env::current_dir().context("Failed to determine current directory")?,
+    };
+
+    let (config_path, profiles) =
+        load_project_profiles(&anchor, &format!("delete profile '{}'", name));
+
+    if !profiles.contains_key(name) {
+        exit_with_error(&profile_not_found_message(name, &config_path, &profiles));
+    }
+
+    if !force && !confirm_delete(name)? {
+        exit_with_error("Cancelled, profile was not deleted.");
+    }
+
+    delete_profile(&config_path, name)?;
+    println!("Deleted profile '{}' from {}.", name, config_path.display());
+    Ok(())
+}
+
+fn confirm_delete(name: &str) -> Result<bool, Error> {
+    let answer = prompt_line(&format!("Delete profile '{}'? [y/N]: ", name))?;
+    Ok(matches!(answer.to_lowercase().as_str(), "y" | "yes"))
 }
 
 fn exit_with_error(message: &str) -> ! {

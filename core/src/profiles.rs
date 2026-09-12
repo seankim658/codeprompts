@@ -91,6 +91,57 @@ fn profile_to_table(profile: &Profile) -> Result<toml_edit::Table> {
     Ok(table)
 }
 
+pub fn delete_profile(path: &Path, name: &str) -> Result<bool> {
+    if !path.exists() {
+        return Ok(false);
+    }
+
+    let contents = std::fs::read_to_string(path)
+        .with_context(|| format!("Failed to read config file: {}", path.display()))?;
+    let mut doc = contents
+        .parse::<toml_edit::DocumentMut>()
+        .with_context(|| format!("Failed to parse config file: {}", path.display()))?;
+
+    let profiles = match doc.get_mut("profiles").and_then(|item| item.as_table_mut()) {
+        Some(profiles) => profiles,
+        None => return Ok(false),
+    };
+
+    if profiles.remove(name).is_none() {
+        return Ok(false);
+    }
+
+    if profiles.is_empty() {
+        doc.remove("profiles");
+    } else {
+        trim_leading_blank_lines(profiles);
+    }
+
+    std::fs::write(path, doc.to_string())
+        .with_context(|| format!("Failed to write config file: {}", path.display()))?;
+    Ok(true)
+}
+
+fn trim_leading_blank_lines(profiles: &mut toml_edit::Table) {
+    let first_table = profiles
+        .iter_mut()
+        .next()
+        .and_then(|(_, item)| item.as_table_mut());
+    let table = match first_table {
+        Some(table) => table,
+        None => return,
+    };
+
+    let decor = table.decor_mut();
+    let trimmed = decor
+        .prefix()
+        .and_then(|raw| raw.as_str())
+        .unwrap_or("")
+        .trim_start_matches(|c: char| c == '\n' || c == '\r')
+        .to_owned();
+    decor.set_prefix(trimmed);
+}
+
 /// A value field set both in a profile and on the command line.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Conflict {
