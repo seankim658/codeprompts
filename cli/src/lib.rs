@@ -10,6 +10,7 @@ pub mod constants {
 pub mod files;
 pub mod git;
 pub mod logging;
+pub mod output;
 pub mod spinner;
 pub mod template;
 pub mod tokenizer;
