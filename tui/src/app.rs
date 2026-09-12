@@ -229,7 +229,11 @@ impl App {
                 MarkKind::Exclude => self.file_tree.toggle_exclude_path(&path),
                 MarkKind::Cycle => self.file_tree.cycle_status_path(&path),
             },
-            SearchAction::Reveal(_path) => self.search.close(),
+            SearchAction::Reveal(path) => {
+                self.file_tree.reveal(&path);
+                self.active_panel = ActivePanel::FileTree;
+                self.search.close();
+            }
             SearchAction::Close => self.search.close(),
         }
     }

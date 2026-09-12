@@ -114,4 +114,4 @@ Currently, the included pre-defined templates are:
 
 ![TUI](./imgs/tui.png)
 
-The project also includes an optional TUI wrapper where you can provide a [config file](./docs/config_file.md) to override various flags and see how the command is structured before running it.
+The project also includes an optional TUI wrapper where you can provide a [config file](./docs/config_file.md) to override various flags and see how the command is structured before running it. The TUI also includes a telescope-style [fuzzy finder](./docs/fuzzy_finder.md) for quick file searching.

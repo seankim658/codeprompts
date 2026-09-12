@@ -17,7 +17,7 @@ use tui_tree_widget::{Tree, TreeItem, TreeState};
 
 const INCLUDE_KEY: char = '+';
 const EXCLUDE_KEY: char = '-';
-const CYCLE_KEY: char = ' ';
+const EXPAND_KEY: char = ' ';
 
 const GLYPH_INCLUDED: &str = "[+] ";
 const GLYPH_EXCLUDED: &str = "[-] ";
@@ -527,18 +527,36 @@ impl FileTree {
         self.state.close_all();
         self.invalidate_cache();
     }
+
+    /// Reveals `path` in the tree by opening its ancestor directories and
+    /// selecting it.
+    pub fn reveal(&mut self, path: &Path) {
+        let mut identifier: Vec<String> = Vec::new();
+        let mut cumulative = PathBuf::new();
+        let components: Vec<_> = path.components().collect();
+        for (index, component) in components.iter().enumerate() {
+            cumulative.push(component);
+            identifier.push(cumulative.to_string_lossy().into_owned());
+
+            let is_target = index == components.len() - 1;
+            if !is_target {
+                self.state.open(identifier.clone());
+            }
+        }
+        self.state.select(identifier);
+    }
 }
 
 impl Panel for FileTree {
     fn handle_input(&mut self, key: KeyEvent) -> Result<()> {
         match key.code {
             KeyCode::Char('c') => self.close_all_nodes(),
-            KeyCode::Enter => {
+            KeyCode::Enter => self.cycle_selected(),
+            KeyCode::Char(EXPAND_KEY) => {
                 self.state.toggle_selected();
             }
             KeyCode::Char(INCLUDE_KEY) => self.toggle_include(),
             KeyCode::Char(EXCLUDE_KEY) => self.toggle_exclude(),
-            KeyCode::Char(CYCLE_KEY) => self.cycle_selected(),
             _ => {}
         }
         Ok(())

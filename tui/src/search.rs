@@ -184,7 +184,8 @@ impl FileSearch {
         // Chords that act in both insert and normal mode
         match key.code {
             KeyCode::Char('c') if ctrl => return Some(SearchAction::Close),
-            KeyCode::Enter => return self.reveal_selected(),
+            KeyCode::Enter => return self.mark_selected(MarkKind::Cycle),
+            KeyCode::Tab => return self.reveal_selected(),
             KeyCode::Char('n') if ctrl => {
                 self.move_selection_down(1);
                 return None;
@@ -220,7 +221,6 @@ impl FileSearch {
         match key.code {
             KeyCode::Char('+') => self.mark_selected(MarkKind::Include),
             KeyCode::Char('-') => self.mark_selected(MarkKind::Exclude),
-            KeyCode::Char(' ') => self.mark_selected(MarkKind::Cycle),
             KeyCode::Char('q') | KeyCode::Esc => Some(SearchAction::Close),
             KeyCode::Char('j') => {
                 self.move_selection_down(1);
