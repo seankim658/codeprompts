@@ -4,6 +4,8 @@ use codeprompt_core::GlobalConfig;
 use serde::Deserialize;
 use std::path::PathBuf;
 
+const MAX_ESCAPE_SEQUENCE_LEN: usize = 4;
+
 /// TUI configuration loaded from `~/.codeprompt.toml`.
 #[derive(Debug, Default, Deserialize)]
 #[serde(default)]
@@ -29,6 +31,8 @@ pub struct TuiConfig {
     pub line_numbers: bool,
     /// Show a relative line-number gutter.
     pub relative_line_numbers: bool,
+    /// A sequence of characters that leaves the finder's insert mode.
+    pub escape_sequence: Option<String>,
     /// Default option toggles (`[tui.defaults]`).
     pub defaults: OptionState,
 }
@@ -40,6 +44,7 @@ impl Default for TuiConfig {
             template_dir: None,
             line_numbers: false,
             relative_line_numbers: false,
+            escape_sequence: None,
             defaults: OptionState::default(),
         }
     }
@@ -50,6 +55,39 @@ impl TuiConfig {
     pub fn gutter_mode(&self) -> GutterMode {
         GutterMode::from_flags(self.line_numbers, self.relative_line_numbers)
     }
+
+    /// The validated insert-mode escape sequence.
+    pub fn escape_sequence_chars(&self) -> Result<Option<Vec<char>>> {
+        self.escape_sequence
+            .as_deref()
+            .map(validate_escape_sequence)
+            .transpose()
+    }
+}
+
+/// Validates the configured insert-mode escape sequence.
+///
+/// A valid sequence is 1 to [`MAX_ESCAPE_SEQUENCE_LEN`] characters, none
+/// of which are whitespace or control characters.
+fn validate_escape_sequence(sequence: &str) -> Result<Vec<char>> {
+    let chars: Vec<char> = sequence.chars().collect();
+    if chars.is_empty() {
+        anyhow::bail!("tui.escape_sequence must not be emtpy");
+    }
+    if chars.len() > MAX_ESCAPE_SEQUENCE_LEN {
+        anyhow::bail!(
+            "tui.escape_sequence must be at most {} characters, got {}",
+            MAX_ESCAPE_SEQUENCE_LEN,
+            chars.len()
+        );
+    }
+    if let Some(bad) = chars.iter().find(|c| c.is_whitespace() || c.is_control()) {
+        anyhow::bail!(
+            "tui.escape_sequence must not contain whitespace or control characters (found {:?})",
+            bad
+        );
+    }
+    Ok(chars)
 }
 
 #[derive(Debug, Deserialize, Clone)]

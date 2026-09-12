@@ -15,8 +15,9 @@ use std::path::{Path, PathBuf};
 use std::usize;
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 
-const INCLUDE_KEY: char = 'i';
-const EXCLUDE_KEY: char = 'x';
+const INCLUDE_KEY: char = '+';
+const EXCLUDE_KEY: char = '-';
+const EXPAND_KEY: char = ' ';
 
 const GLYPH_INCLUDED: &str = "[+] ";
 const GLYPH_EXCLUDED: &str = "[-] ";
@@ -32,6 +33,28 @@ pub enum EntryStatus {
     Excluded,
     /// No explicit include/exclude status
     None,
+}
+
+fn next_include_status(current: EntryStatus) -> EntryStatus {
+    match current {
+        EntryStatus::None | EntryStatus::Excluded => EntryStatus::Included,
+        EntryStatus::Included => EntryStatus::None,
+    }
+}
+
+fn next_exclude_status(current: EntryStatus) -> EntryStatus {
+    match current {
+        EntryStatus::None | EntryStatus::Included => EntryStatus::Excluded,
+        EntryStatus::Excluded => EntryStatus::None,
+    }
+}
+
+fn next_cycle_status(current: EntryStatus) -> EntryStatus {
+    match current {
+        EntryStatus::None => EntryStatus::Included,
+        EntryStatus::Included => EntryStatus::Excluded,
+        EntryStatus::Excluded => EntryStatus::None,
+    }
 }
 
 /// The effective display status of an entry after inheitance.
@@ -314,6 +337,18 @@ impl FileTree {
         }
     }
 
+    /// the flat list of every walked entry as `(relative path, id_dir)` pairs.
+    pub fn candidate_paths(&mut self) -> Vec<(PathBuf, bool)> {
+        self.ensure_walk();
+        self.walk
+            .as_ref()
+            .expect("ensure_walk populates the walk")
+            .is_dir_index
+            .iter()
+            .map(|(path, &is_dir)| (path.clone(), is_dir))
+            .collect()
+    }
+
     /// Ensure the rendered items are cached
     fn ensure_items(&mut self) {
         self.ensure_walk();
@@ -422,30 +457,69 @@ impl FileTree {
         (style, glyph.to_owned())
     }
 
-    /// Toggle include status for the selected entry
+    /// Toggle include status for the selected entry.
     fn toggle_include(&mut self) {
-        if let Some(rel_path) = self.state.selected().last().cloned() {
-            let path = PathBuf::from(rel_path);
-            let status = self.statuses.entry(path).or_insert(EntryStatus::None);
-            *status = match *status {
-                EntryStatus::None | EntryStatus::Excluded => EntryStatus::Included,
-                EntryStatus::Included => EntryStatus::None,
-            };
-            self.invalidate_cache();
+        if let Some(rel_path) = self.selected_rel_path() {
+            self.toggle_include_path(&rel_path);
         }
     }
 
-    /// Toggle exclude status for the selected entry
+    /// Toggle exclude status for the selected entry.
     fn toggle_exclude(&mut self) {
-        if let Some(rel_path) = self.state.selected().last().cloned() {
-            let path = PathBuf::from(rel_path);
-            let status = self.statuses.entry(path).or_insert(EntryStatus::None);
-            *status = match *status {
-                EntryStatus::None | EntryStatus::Included => EntryStatus::Excluded,
-                EntryStatus::Excluded => EntryStatus::None,
-            };
-            self.invalidate_cache();
+        if let Some(rel_path) = self.selected_rel_path() {
+            self.toggle_exclude_path(&rel_path);
         }
+    }
+
+    /// Cycle the selected entry through none -> include -> exclude -> none.
+    fn cycle_selected(&mut self) {
+        if let Some(rel_path) = self.selected_rel_path() {
+            self.cycle_status_path(&rel_path);
+        }
+    }
+
+    /// The relative path of the currently selected tree entry, if any.
+    fn selected_rel_path(&self) -> Option<PathBuf> {
+        self.state.selected().last().map(|id| PathBuf::from(id))
+    }
+
+    /// Sets the include mark for `path` (none/exclude -> include, include ->
+    /// none).
+    pub fn toggle_include_path(&mut self, path: &Path) {
+        self.set_status(path, next_include_status);
+    }
+
+    /// Sets the exclude mark for `path` (none/include -> exclude, exclude ->
+    /// none).
+    pub fn toggle_exclude_path(&mut self, path: &Path) {
+        self.set_status(path, next_exclude_status);
+    }
+
+    /// Cycles `path` through none -> include -> exclude -> none.
+    pub fn cycle_status_path(&mut self, path: &Path) {
+        self.set_status(path, next_cycle_status);
+    }
+
+    pub fn status_of(&self, path: &Path) -> EntryStatus {
+        self.statuses
+            .get(path)
+            .cloned()
+            .unwrap_or(EntryStatus::None)
+    }
+
+    /// Applies a status transition to `path` and invalidates the render cache.
+    ///
+    /// ### Arguments
+    ///
+    /// - `path`: The entry, relative to the tree root.
+    /// - `transition`: Maps the entry's current status to its next status.
+    fn set_status(&mut self, path: &Path, transition: fn(EntryStatus) -> EntryStatus) {
+        let status = self
+            .statuses
+            .entry(path.to_path_buf())
+            .or_insert(EntryStatus::None);
+        *status = transition(status.clone());
+        self.invalidate_cache();
     }
 
     /// Close all open nodes in the tree
@@ -453,13 +527,32 @@ impl FileTree {
         self.state.close_all();
         self.invalidate_cache();
     }
+
+    /// Reveals `path` in the tree by opening its ancestor directories and
+    /// selecting it.
+    pub fn reveal(&mut self, path: &Path) {
+        let mut identifier: Vec<String> = Vec::new();
+        let mut cumulative = PathBuf::new();
+        let components: Vec<_> = path.components().collect();
+        for (index, component) in components.iter().enumerate() {
+            cumulative.push(component);
+            identifier.push(cumulative.to_string_lossy().into_owned());
+
+            let is_target = index == components.len() - 1;
+            if !is_target {
+                self.state.open(identifier.clone());
+            }
+        }
+        self.state.select(identifier);
+    }
 }
 
 impl Panel for FileTree {
     fn handle_input(&mut self, key: KeyEvent) -> Result<()> {
         match key.code {
             KeyCode::Char('c') => self.close_all_nodes(),
-            KeyCode::Enter => {
+            KeyCode::Enter => self.cycle_selected(),
+            KeyCode::Char(EXPAND_KEY) => {
                 self.state.toggle_selected();
             }
             KeyCode::Char(INCLUDE_KEY) => self.toggle_include(),

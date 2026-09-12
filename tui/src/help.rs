@@ -4,7 +4,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, Paragraph, Wrap};
 use ratatui::Frame;
 
-const HELP_TEXT: [(&str, &str); 29] = [
+const HELP_TEXT: &[(&str, &str)] = &[
     ("Panels:", ""),
     ("ctrl-h", "Focus panel left"),
     ("ctrl-l", "Focus panel right"),
@@ -18,9 +18,10 @@ const HELP_TEXT: [(&str, &str); 29] = [
     ("G", "Jump to bottom"),
     ("", ""),
     ("File Tree:", ""),
-    ("enter", "Expand/collapse directory"),
-    ("i", "Include file/directory"),
-    ("x", "Exclude file/directory"),
+    ("enter", "Cycle include/exclude/none"),
+    ("space", "Expand/collapse directory"),
+    ("+", "Include file/directory"),
+    ("-", "Exclude file/directory"),
     ("c", "Collapse all open nodes"),
     ("", ""),
     ("Options & Templates:", ""),
@@ -34,6 +35,14 @@ const HELP_TEXT: [(&str, &str); 29] = [
     ("", ""),
     ("General:", ""),
     ("?", "Toggle help"),
+    ("", ""),
+    ("Search", ""),
+    ("/", "Open fuzzy finder"),
+    ("enter", "Cycle mark (any mode)"),
+    ("+ / -", "Include / exclude (normal)"),
+    ("tab", "Reveal in tree & close"),
+    ("esc / q", "Close (normal mode)"),
+    ("(config)", "escape_sequence exits insert mode"),
 ];
 
 pub fn draw_help(frame: &mut Frame, area: Rect) {
@@ -42,7 +51,7 @@ pub fn draw_help(frame: &mut Frame, area: Rect) {
     frame.render_widget(Clear, popup_area);
 
     let mut text = Vec::new();
-    for (key, desc) in HELP_TEXT {
+    for &(key, desc) in HELP_TEXT {
         if desc.is_empty() {
             text.push(Line::from(vec![Span::styled(
                 key,
@@ -68,7 +77,7 @@ pub fn draw_help(frame: &mut Frame, area: Rect) {
 }
 
 /// Helper function to create a centered rect using up certain percentage of the available rect
-fn centered_rect(r: Rect, percent_x: u16, percent_y: u16) -> Rect {
+pub(crate) fn centered_rect(r: Rect, percent_x: u16, percent_y: u16) -> Rect {
     let popup_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
