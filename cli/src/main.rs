@@ -9,7 +9,8 @@ use codeprompt::logging;
 use codeprompt::prelude::*;
 use codeprompt::validation::{validate_clipboard_copy, validate_token_count, ValidationConfig};
 use codeprompt_core::profiles::{
-    delete_profile, find_project_config, load_profiles, resolve, save_profile, Conflict, Profile,
+    delete_profile, find_project_config, load_profiles, profile_to_flags, profile_to_toml, resolve,
+    save_profile, Conflict, Profile, ProfileFlag,
 };
 use colored::*;
 use git2::Repository;
@@ -47,7 +48,11 @@ struct Args {
     #[arg(long, value_name = "NAME")]
     delete_profile: Option<String>,
 
-    /// SKip the confirmation prompt when overwriting (--write-profile) or
+    /// Show a saved profile's values and the command it would run.
+    #[arg(long, value_name = "NAME")]
+    show_profile: Option<String>,
+
+    /// Skip the confirmation prompt when overwriting (--write-profile) or
     /// deleting (--delete_profile) a profile.
     #[arg(long)]
     force: bool,
@@ -178,6 +183,9 @@ async fn main() -> Result<(), Error> {
     }
     if let Some(name) = args.delete_profile.clone() {
         return delete_profile_command(&name, args.path.as_deref(), args.force);
+    }
+    if let Some(name) = args.show_profile.clone() {
+        return show_profile_command(&name, args.path.as_deref());
     }
 
     let project_root = match &args.subcommand {
@@ -678,6 +686,52 @@ fn delete_profile_command(name: &str, anchor: Option<&Path>, force: bool) -> Res
 fn confirm_delete(name: &str) -> Result<bool, Error> {
     let answer = prompt_line(&format!("Delete profile '{}'? [y/N]: ", name))?;
     Ok(matches!(answer.to_lowercase().as_str(), "y" | "yes"))
+}
+
+fn show_profile_command(name: &str, anchor: Option<&Path>) -> Result<(), Error> {
+    let anchor = match anchor {
+        Some(path) => path.to_path_buf(),
+        None => std::env::current_dir().context("Failed to determine current directory")?,
+    };
+
+    let (config_path, profiles) =
+        load_project_profiles(&anchor, &format!("show profile '{}'", name));
+
+    let profile = match profiles.get(name) {
+        Some(profile) => profile,
+        None => exit_with_error(&profile_not_found_message(name, &config_path, &profiles)),
+    };
+
+    let values = profile_to_toml(profile)?;
+    let values = values.trim_end();
+    let command = reconstruct_command(&profile_to_flags(profile));
+
+    println!("Profile '{}' in {}\n", name, config_path.display());
+    println!("{}", "Values:".bold());
+    if values.is_empty() {
+        println!("(no values set)\n");
+    } else {
+        println!("{}\n", values);
+    }
+    println!("{}", "Command:".bold());
+    println!("{}", command);
+    Ok(())
+}
+
+fn reconstruct_command(flags: &[ProfileFlag]) -> String {
+    let mut parts = vec!["codeprompt".to_owned()];
+    for flag in flags {
+        parts.push(flag.flag.to_owned());
+        if let Some(value) = &flag.value {
+            parts.push(quote_value(value));
+        }
+    }
+    parts.push("<path>".to_owned());
+    parts.join(" ")
+}
+
+fn quote_value(value: &str) -> String {
+    format!("\"{}\"", value.replace('"', "\\\""))
 }
 
 fn exit_with_error(message: &str) -> ! {

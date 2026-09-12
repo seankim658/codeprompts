@@ -91,6 +91,10 @@ fn profile_to_table(profile: &Profile) -> Result<toml_edit::Table> {
     Ok(table)
 }
 
+pub fn profile_to_toml(profile: &Profile) -> Result<String> {
+    toml::to_string(profile).context("Failed to serialize profile")
+}
+
 pub fn delete_profile(path: &Path, name: &str) -> Result<bool> {
     if !path.exists() {
         return Ok(false);
@@ -233,6 +237,91 @@ pub fn resolve(profile: &Profile, overrides: &Profile) -> Result<Profile, Vec<Co
         no_spinner: overrides.no_spinner.or(profile.no_spinner),
         json: overrides.json.or(profile.json),
     })
+}
+
+/// A single reconstructed CLI flag.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ProfileFlag {
+    pub flag: &'static str,
+    pub value: Option<String>,
+}
+
+/// Reconstructs the CLI flags a profile represents, in the same  order `apply_profile`
+/// writes them.
+pub fn profile_to_flags(profile: &Profile) -> Vec<ProfileFlag> {
+    let mut flags = Vec::new();
+
+    if let Some(include) = &profile.include {
+        flags.push(valued("--include", include.join(", ")));
+    }
+    if let Some(exclude) = &profile.exclude {
+        flags.push(valued("--exclude", exclude.join(", ")));
+    }
+    if let Some(output) = &profile.output {
+        flags.push(valued("--output", output.clone()));
+    }
+    if let Some(template) = &profile.template {
+        flags.push(valued("--template", template.display().to_string()));
+    }
+    if let Some(encoding) = &profile.encoding {
+        flags.push(valued("--encoding", encoding.clone()));
+    }
+
+    push_switch(
+        &mut flags,
+        "--exclude-priority",
+        profile.exclude_priority,
+        true,
+    );
+    push_switch(
+        &mut flags,
+        "--exclude-from-tree",
+        profile.exclude_from_tree,
+        true,
+    );
+    push_switch(
+        &mut flags,
+        "--literal-brackets",
+        profile.literal_brackets,
+        true,
+    );
+    push_switch(&mut flags, "--gitignore", profile.gitignore, false);
+    push_switch(&mut flags, "--diff-staged", profile.diff_staged, true);
+    push_switch(&mut flags, "--diff-unstaged", profile.diff_unstaged, true);
+    push_switch(&mut flags, "--no-tokens", profile.no_tokens, true);
+    push_switch(
+        &mut flags,
+        "--no-line-numbers",
+        profile.no_line_numbers,
+        true,
+    );
+    push_switch(&mut flags, "--no-codeblock", profile.no_codeblock, true);
+    push_switch(&mut flags, "--absolute-paths", profile.absolute_paths, true);
+    push_switch(&mut flags, "--no-clipboard", profile.no_clipboard, true);
+    push_switch(&mut flags, "--no-spinner", profile.no_spinner, true);
+    push_switch(&mut flags, "--json", profile.json, true);
+
+    flags
+}
+
+fn valued(flag: &'static str, value: String) -> ProfileFlag {
+    ProfileFlag {
+        flag,
+        value: Some(value),
+    }
+}
+
+/// Pushes a switch flag only when the stored value matches the value that
+/// activates it.
+fn push_switch(
+    flags: &mut Vec<ProfileFlag>,
+    flag: &'static str,
+    stored: Option<bool>,
+    active_when: bool,
+) {
+    if stored == Some(active_when) {
+        flags.push(ProfileFlag { flag, value: None });
+    }
 }
 
 /// A single saved profile.
