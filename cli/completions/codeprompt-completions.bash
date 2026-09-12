@@ -31,12 +31,24 @@ _codeprompt() {
 
     case "${cmd}" in
         codeprompt)
-            opts="-d -u -c -o -l -t -h -V --include --exclude --exclude-priority --exclude-from-tree --literal-brackets --gitignore --diff-staged --diff-unstaged --no-tokens --encoding --output --no-line-numbers --no-codeblock --absolute-paths --no-clipboard --template --no-spinner --json --issue --verbose --no-warnings --help --version [PATH] completion help"
+            opts="-d -u -c -o -l -t -h -V --profile --list-profiles --write-profile --delete-profile --force --include --exclude --exclude-priority --exclude-from-tree --literal-brackets --gitignore --diff-staged --diff-unstaged --no-tokens --encoding --output --no-line-numbers --no-codeblock --absolute-paths --no-clipboard --template --no-spinner --json --issue --verbose --no-warnings --help --version [PATH] completion help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
+                --profile)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --write-profile)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --delete-profile)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
                 --include)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
