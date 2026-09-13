@@ -3,12 +3,13 @@
 Both `codeprompt` and the TUI read an optional config file at `~/.codeprompt.toml`.
 If it's missing, both fall back to their built-in defaults.
 
-The file has two top-level sections:
+The file has three top-level sections:
 
 - `[tui]`: read only by the TUI. Sets the command it builds, where it looks for
   templates, and the starting state of every option toggle.
 - `[global]`: read by **both** the TUI and the CLI it runs. This is how the two
   stay in agreement about what to skip, with no arguments passed between them.
+- `[profiles]`: global (cross-repo) profiles for the CLI (see [Profiles](./profiles.md)).
 
 A ready-to-edit sample lives at
 [`codeprompt.example.toml`](../codeprompt.example.toml) in the repo root — copy it
@@ -72,10 +73,3 @@ This is a pure replace with no special cases. If you drop `.git` from the list,
 the walk descends into `.git`; binary objects are filtered out automatically, but
 plain-text git files (like `HEAD` and `config`) would then be included. Keep
 `.git` in the list unless you have a reason not to.
-
-## Upgrading from the old format
-
-Earlier versions used a flat, TUI-only file with `command`, `template_dir`, and a
-`[defaults]` table at the top level. Those now live under `[tui]` and
-`[tui.defaults]`. A file in the old shape still loads without error, but its TUI
-settings are silently ignored and you'll get defaults — move them under `[tui]`.

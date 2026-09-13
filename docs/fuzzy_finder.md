@@ -56,7 +56,7 @@ than the cursor.
 | `F{char}`     | the previous `{char}`            |
 | `T{char}`     | just after the previous `{char}` |
 
-### Entering insert mode
+### Entering Insert Mode
 
 | Key      | Action                                             |
 | -------- | -------------------------------------------------- |

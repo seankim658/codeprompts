@@ -11,12 +11,30 @@ use std::path::{Path, PathBuf};
 
 const PROJECT_CONFIG_FILE: &str = ".codeprompt.toml";
 
+/// Which config file a profile lives in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Scope {
+    Project,
+    Global,
+}
+
+impl Scope {
+    pub fn label(self) -> &'static str {
+        match self {
+            Scope::Project => "project",
+            Scope::Global => "global",
+        }
+    }
+}
+
 /// Locates the project-local config file by walking up from `start`
 /// toward the git root.
 pub fn find_project_config(start: &Path) -> Result<Option<PathBuf>> {
     let start = start
         .canonicalize()
         .with_context(|| format!("Failed to resolve path: {}", start.display()))?;
+
+    let home = dirs::home_dir().and_then(|home| home.canonicalize().ok());
 
     let mut dir = if start.is_dir() {
         start.as_path()
@@ -25,6 +43,10 @@ pub fn find_project_config(start: &Path) -> Result<Option<PathBuf>> {
     };
 
     loop {
+        if Some(dir) == home.as_deref() {
+            return Ok(None);
+        }
+
         let candidate = dir.join(PROJECT_CONFIG_FILE);
         if candidate.is_file() {
             return Ok(Some(candidate));

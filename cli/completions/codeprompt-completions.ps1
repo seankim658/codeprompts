@@ -36,6 +36,7 @@ Register-ArgumentCompleter -Native -CommandName 'codeprompt' -ScriptBlock {
             [CompletionResult]::new('--issue', '--issue', [CompletionResultType]::ParameterName, 'Fetch a specific Github issue for the repository')
             [CompletionResult]::new('--list-profiles', '--list-profiles', [CompletionResultType]::ParameterName, 'List the profiles defined in the project-local `codeprompt.toml` and exit')
             [CompletionResult]::new('--force', '--force', [CompletionResultType]::ParameterName, 'Skip the confirmation prompt when overwriting (--write-profile) or deleting (--delete_profile) a profile')
+            [CompletionResult]::new('--global', '--global', [CompletionResultType]::ParameterName, 'Operate on global profiles instead of project-local ones')
             [CompletionResult]::new('--exclude-priority', '--exclude-priority', [CompletionResultType]::ParameterName, 'Change pattern priority in case of conflict to prioritize the exclusion pattern')
             [CompletionResult]::new('--exclude-from-tree', '--exclude-from-tree', [CompletionResultType]::ParameterName, 'Eclude files/folders from the source tree based on exclude patterns')
             [CompletionResult]::new('--literal-brackets', '--literal-brackets', [CompletionResultType]::ParameterName, 'Treat `[` and `]` in include/exclude patterns as literal characters rather than glob character classes. Useful for SvelteKit/Next.js dynamic route directories like `[param]`')
