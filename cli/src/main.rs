@@ -1,17 +1,18 @@
-use anyhow::anyhow;
+mod profile_commands;
+
 use anyhow::{Context, Error, Result};
-use arboard::Clipboard;
-use clap::{ArgAction, Command, CommandFactory, Parser, Subcommand};
+use clap::{ArgAction, Command, CommandFactory, FromArgMatches, Parser, Subcommand};
 use clap_complete::{generate, Generator, Shell};
-use codeprompt::files::prompt_for_sensitive_files;
-use codeprompt::logging;
-use codeprompt::prelude::*;
-use codeprompt::validation::{validate_clipboard_copy, validate_token_count, ValidationConfig};
 use colored::*;
 use git2::Repository;
 use serde_json::json;
-use std::io::Write;
 use std::path::PathBuf;
+
+use codeprompt::files::prompt_for_sensitive_files;
+use codeprompt::logging;
+use codeprompt::output::{copy_to_clipboard, write_output_file};
+use codeprompt::prelude::*;
+use codeprompt::validation::{validate_clipboard_copy, validate_token_count, ValidationConfig};
 
 /// Create standardized LLM prompts from your code.
 #[derive(Parser, Debug)]
@@ -24,6 +25,32 @@ struct Args {
     /// Path to project directory.
     #[arg()]
     path: Option<PathBuf>,
+
+    /// Run using a saved profile from the project-local `.codeprompt.toml`.
+    #[arg(long)]
+    profile: Option<String>,
+
+    /// List the profiles defined in the project-local `codeprompt.toml` and exit.
+    #[arg(long)]
+    list_profiles: bool,
+
+    /// Save the flags from this run as a profile, then exit. Use `--write-profile NAME`
+    /// to name it, or bare `--write-profile` to be prompted
+    #[arg(long, value_name = "NAME", num_args = 0..=1, require_equals = true)]
+    write_profile: Option<Option<String>>,
+
+    /// Delete a saved profile from the project-local `.codeprompt.toml`.
+    #[arg(long, value_name = "NAME")]
+    delete_profile: Option<String>,
+
+    /// Show a saved profile's values and the command it would run.
+    #[arg(long, value_name = "NAME")]
+    show_profile: Option<String>,
+
+    /// Skip the confirmation prompt when overwriting (--write-profile) or
+    /// deleting (--delete_profile) a profile.
+    #[arg(long)]
+    force: bool,
 
     /// Glob patterns to include.
     #[arg(long)]
@@ -134,9 +161,32 @@ fn print_completions<G: Generator>(gen: G, cmd: &mut Command) {
 /// - `Result<(), Error>`: Ok(()) on successful execution, or an Error if any step fails.
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let args = Args::parse();
+    let matches = Args::command().get_matches();
+    let mut args = match Args::from_arg_matches(&matches) {
+        Ok(args) => args,
+        Err(error) => error.exit(),
+    };
 
     logging::setup(args.verbose);
+
+    if args.list_profiles {
+        return profile_commands::list_profiles(args.path.as_deref());
+    }
+
+    if let Some(requested_name) = args.write_profile.clone() {
+        return profile_commands::write_profile_command(
+            requested_name,
+            args.path.as_deref(),
+            &args,
+            &matches,
+        );
+    }
+    if let Some(name) = args.delete_profile.clone() {
+        return profile_commands::delete_profile_command(&name, args.path.as_deref(), args.force);
+    }
+    if let Some(name) = args.show_profile.clone() {
+        return profile_commands::show_profile_command(&name, args.path.as_deref());
+    }
 
     let project_root = match &args.subcommand {
         Some(SubCommand::Completion { shell }) => {
@@ -145,7 +195,7 @@ async fn main() -> Result<(), Error> {
             return Ok(());
         }
         None => {
-            if let Some(project_root) = args.path {
+            if let Some(project_root) = args.path.clone() {
                 project_root
             } else {
                 eprintln!(
@@ -161,6 +211,12 @@ async fn main() -> Result<(), Error> {
             }
         }
     };
+
+    if let Some(profile_name) = args.profile.clone() {
+        let resolved =
+            profile_commands::resolve_profile(&profile_name, &project_root, &args, &matches);
+        profile_commands::apply_profile(&mut args, &resolved);
+    }
 
     let validation_config = ValidationConfig::new(
         args.diff_staged,
@@ -420,69 +476,5 @@ async fn main() -> Result<(), Error> {
         }
     }
 
-    Ok(())
-}
-
-/// Copies the output to the system clipboard.
-///
-/// ### Arguments
-///
-/// - `content`: The content to copy to the clipboard.
-///
-/// ### Returns
-///
-/// - `Result<(), anyhow::Error>`: Unit tuple on success or an anyhow error.
-///
-fn copy_to_clipboard(content: &str) -> Result<(), Error> {
-    let mut clipboard = Clipboard::new().expect("Failed to initialize clipboard.");
-    clipboard
-        .set_text(content.to_owned())
-        .context("Failed to copy output to clipboard.")?;
-    println!(
-        "{}{}{} {}",
-        "[".bold().white(),
-        "✓".bold().green(),
-        "]".bold().white(),
-        "Prompt successfully copied to clipboard!".green()
-    );
-    Ok(())
-}
-
-/// Writes the output to an output file.
-///
-/// ### Arguments
-///
-/// - `path`: The path to the output file.
-/// - `content`: The content to write to the output file.
-///
-/// ### Returns
-///
-/// - `Result<(), anyhow::Error>`: Unit tuple on success or an anyhow error.
-///
-fn write_output_file(path: &str, content: &str) -> Result<(), Error> {
-    let path_obj = std::path::Path::new(path);
-    if let Some(parent) = path_obj.parent() {
-        if !parent.exists() {
-            return Err(anyhow!(
-                "Output directory '{}' does not exist",
-                parent.display()
-            ));
-        }
-    }
-
-    let file = std::fs::File::create(path)
-        .with_context(|| format!("Failed to create output file: {}", path))?;
-    let mut writer = std::io::BufWriter::new(file);
-
-    write!(writer, "{}", content)
-        .with_context(|| format!("Failed to write to output file: {}", path))?;
-
-    println!(
-        "{}{}{} {}",
-        "[".bold().white(),
-        "✓".bold().green(),
-        "]".bold().white(),
-        format!("Prompt successfully written to file: {}", path).green()
-    );
     Ok(())
 }

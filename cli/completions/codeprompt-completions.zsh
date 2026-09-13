@@ -15,6 +15,10 @@ _codeprompt() {
 
     local context curcontext="$curcontext" state line
     _arguments "${_arguments_options[@]}" : \
+'--profile=[Run using a saved profile from the project-local \`.codeprompt.toml\`]:PROFILE:_default' \
+'--write-profile=[Save the flags from this run as a profile, then exit. Use \`--write-profile NAME\` to name it, or bare \`--write-profile\` to be prompted]' \
+'--delete-profile=[Delete a saved profile from the project-local \`.codeprompt.toml\`]:NAME:_default' \
+'--show-profile=[Show a saved profile'\''s values and the command it would run]:NAME:_default' \
 '--include=[Glob patterns to include]:INCLUDE:_default' \
 '--exclude=[Glob patterns to exclude]:EXCLUDE:_default' \
 '-c+[Tokenizer to use for token count]:ENCODING:_default' \
@@ -24,6 +28,8 @@ _codeprompt() {
 '-t+[Optional path to Handlebars template]:TEMPLATE:_files' \
 '--template=[Optional path to Handlebars template]:TEMPLATE:_files' \
 '--issue=[Fetch a specific Github issue for the repository]:ISSUE:_default' \
+'--list-profiles[List the profiles defined in the project-local \`codeprompt.toml\` and exit]' \
+'--force[Skip the confirmation prompt when overwriting (--write-profile) or deleting (--delete_profile) a profile]' \
 '--exclude-priority[Change pattern priority in case of conflict to prioritize the exclusion pattern]' \
 '--exclude-from-tree[Eclude files/folders from the source tree based on exclude patterns]' \
 '--literal-brackets[Treat \`\[\` and \`\]\` in include/exclude patterns as literal characters rather than glob character classes. Useful for SvelteKit/Next.js dynamic route directories like \`\[param\]\`]' \

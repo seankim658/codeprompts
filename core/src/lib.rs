@@ -5,6 +5,8 @@
 //! `[global]` section independently, so the file tree the TUI previews matches
 //! what the CLI actually walks — with no argument pass-through between them.
 
+pub mod profiles;
+
 use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::path::{Path, PathBuf};

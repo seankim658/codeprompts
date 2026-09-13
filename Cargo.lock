@@ -347,7 +347,9 @@ dependencies = [
  "anyhow",
  "dirs",
  "serde",
+ "tempfile",
  "toml",
+ "toml_edit",
 ]
 
 [[package]]

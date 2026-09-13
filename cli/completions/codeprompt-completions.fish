@@ -1,6 +1,6 @@
 # Print an optspec for argparse to handle cmd's options that are independent of any subcommand.
 function __fish_codeprompt_global_optspecs
-	string join \n include= exclude= exclude-priority exclude-from-tree literal-brackets gitignore d/diff-staged u/diff-unstaged no-tokens c/encoding= o/output= l/no-line-numbers no-codeblock absolute-paths no-clipboard t/template= no-spinner json issue= verbose no-warnings h/help V/version
+	string join \n profile= list-profiles write-profile= delete-profile= show-profile= force include= exclude= exclude-priority exclude-from-tree literal-brackets gitignore d/diff-staged u/diff-unstaged no-tokens c/encoding= o/output= l/no-line-numbers no-codeblock absolute-paths no-clipboard t/template= no-spinner json issue= verbose no-warnings h/help V/version
 end
 
 function __fish_codeprompt_needs_command
@@ -24,12 +24,18 @@ function __fish_codeprompt_using_subcommand
 	contains -- $cmd[1] $argv
 end
 
+complete -c codeprompt -n "__fish_codeprompt_needs_command" -l profile -d 'Run using a saved profile from the project-local `.codeprompt.toml`' -r
+complete -c codeprompt -n "__fish_codeprompt_needs_command" -l write-profile -d 'Save the flags from this run as a profile, then exit. Use `--write-profile NAME` to name it, or bare `--write-profile` to be prompted' -r
+complete -c codeprompt -n "__fish_codeprompt_needs_command" -l delete-profile -d 'Delete a saved profile from the project-local `.codeprompt.toml`' -r
+complete -c codeprompt -n "__fish_codeprompt_needs_command" -l show-profile -d 'Show a saved profile\'s values and the command it would run' -r
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l include -d 'Glob patterns to include' -r
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l exclude -d 'Glob patterns to exclude' -r
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -s c -l encoding -d 'Tokenizer to use for token count' -r
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -s o -l output -d 'Redirect output to file' -r
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -s t -l template -d 'Optional path to Handlebars template' -r -F
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l issue -d 'Fetch a specific Github issue for the repository' -r
+complete -c codeprompt -n "__fish_codeprompt_needs_command" -l list-profiles -d 'List the profiles defined in the project-local `codeprompt.toml` and exit'
+complete -c codeprompt -n "__fish_codeprompt_needs_command" -l force -d 'Skip the confirmation prompt when overwriting (--write-profile) or deleting (--delete_profile) a profile'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l exclude-priority -d 'Change pattern priority in case of conflict to prioritize the exclusion pattern'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l exclude-from-tree -d 'Eclude files/folders from the source tree based on exclude patterns'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l literal-brackets -d 'Treat `[` and `]` in include/exclude patterns as literal characters rather than glob character classes. Useful for SvelteKit/Next.js dynamic route directories like `[param]`'
