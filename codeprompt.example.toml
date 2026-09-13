@@ -2,9 +2,10 @@
 #
 # Every value is optional; anything you omit falls back to the default shown here.
 #
-# The file has two sections:
-#   [tui]     read only by the TUI wrapper
-#   [global]  read by BOTH the TUI and the CLI it runs
+# The file has three sections:
+#   [tui]       read only by the TUI wrapper
+#   [global]    read by BOTH the TUI and the CLI it runs
+#   [profiles]  global (cross-repo) CLI profiles
 
 [tui]
 # The command the TUI builds and runs or submits.
@@ -52,3 +53,15 @@ no_spinner = false         # Don't render the progress spinner
 # (Binary objects are still filtered out automatically, but plain-text git files
 # like HEAD and config would then be included.)
 ignore = ["node_modules", ".git", "venv", "__pycache__"]
+
+# Global (cross-repo) CLI profiles. Each [profiles.<name>] is a named bundle of
+# command-line settings. Normally you don't hand-edit these, use: 
+#   `codeprompt --write-profile <name> --global ...` 
+# See docs/profiles.md.
+#
+# [profiles.rust]
+# exclude = ["Cargo.lock"]
+#
+# [profiles.git-diff]
+# diff_staged = true
+# template = "~/.config/codeprompt/templates/git_commit.hbs"

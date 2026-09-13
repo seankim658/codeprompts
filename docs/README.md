@@ -5,4 +5,5 @@
 - [Git Features](./git_features.md)
 - [Options](./options.md)
 - [Config File](./config_file.md)
+- [Profiles](./profiles.md)
 - [Fuzzy Finder](./fuzzy_finder.md)

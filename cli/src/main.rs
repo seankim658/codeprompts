@@ -13,6 +13,7 @@ use codeprompt::logging;
 use codeprompt::output::{copy_to_clipboard, write_output_file};
 use codeprompt::prelude::*;
 use codeprompt::validation::{validate_clipboard_copy, validate_token_count, ValidationConfig};
+use codeprompt_core::profiles::Scope;
 
 /// Create standardized LLM prompts from your code.
 #[derive(Parser, Debug)]
@@ -51,6 +52,10 @@ struct Args {
     /// deleting (--delete_profile) a profile.
     #[arg(long)]
     force: bool,
+
+    /// Operate on global profiles instead of project-local ones.
+    #[arg(long)]
+    global: bool,
 
     /// Glob patterns to include.
     #[arg(long)]
@@ -169,23 +174,35 @@ async fn main() -> Result<(), Error> {
 
     logging::setup(args.verbose);
 
+    let scope = if args.global {
+        Scope::Global
+    } else {
+        Scope::Project
+    };
+
     if args.list_profiles {
-        return profile_commands::list_profiles(args.path.as_deref());
+        return profile_commands::list_profiles(scope, args.path.as_deref());
     }
 
     if let Some(requested_name) = args.write_profile.clone() {
         return profile_commands::write_profile_command(
             requested_name,
+            scope,
             args.path.as_deref(),
             &args,
             &matches,
         );
     }
     if let Some(name) = args.delete_profile.clone() {
-        return profile_commands::delete_profile_command(&name, args.path.as_deref(), args.force);
+        return profile_commands::delete_profile_command(
+            &name,
+            scope,
+            args.path.as_deref(),
+            args.force,
+        );
     }
     if let Some(name) = args.show_profile.clone() {
-        return profile_commands::show_profile_command(&name, args.path.as_deref());
+        return profile_commands::show_profile_command(&name, scope, args.path.as_deref());
     }
 
     let project_root = match &args.subcommand {
@@ -214,7 +231,7 @@ async fn main() -> Result<(), Error> {
 
     if let Some(profile_name) = args.profile.clone() {
         let resolved =
-            profile_commands::resolve_profile(&profile_name, &project_root, &args, &matches);
+            profile_commands::resolve_profile(&profile_name, scope, &project_root, &args, &matches);
         profile_commands::apply_profile(&mut args, &resolved);
     }
 

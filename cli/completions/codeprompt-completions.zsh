@@ -30,6 +30,7 @@ _codeprompt() {
 '--issue=[Fetch a specific Github issue for the repository]:ISSUE:_default' \
 '--list-profiles[List the profiles defined in the project-local \`codeprompt.toml\` and exit]' \
 '--force[Skip the confirmation prompt when overwriting (--write-profile) or deleting (--delete_profile) a profile]' \
+'--global[Operate on global profiles instead of project-local ones]' \
 '--exclude-priority[Change pattern priority in case of conflict to prioritize the exclusion pattern]' \
 '--exclude-from-tree[Eclude files/folders from the source tree based on exclude patterns]' \
 '--literal-brackets[Treat \`\[\` and \`\]\` in include/exclude patterns as literal characters rather than glob character classes. Useful for SvelteKit/Next.js dynamic route directories like \`\[param\]\`]' \

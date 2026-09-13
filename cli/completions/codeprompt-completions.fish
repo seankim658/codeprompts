@@ -1,6 +1,6 @@
 # Print an optspec for argparse to handle cmd's options that are independent of any subcommand.
 function __fish_codeprompt_global_optspecs
-	string join \n profile= list-profiles write-profile= delete-profile= show-profile= force include= exclude= exclude-priority exclude-from-tree literal-brackets gitignore d/diff-staged u/diff-unstaged no-tokens c/encoding= o/output= l/no-line-numbers no-codeblock absolute-paths no-clipboard t/template= no-spinner json issue= verbose no-warnings h/help V/version
+	string join \n profile= list-profiles write-profile= delete-profile= show-profile= force global include= exclude= exclude-priority exclude-from-tree literal-brackets gitignore d/diff-staged u/diff-unstaged no-tokens c/encoding= o/output= l/no-line-numbers no-codeblock absolute-paths no-clipboard t/template= no-spinner json issue= verbose no-warnings h/help V/version
 end
 
 function __fish_codeprompt_needs_command
@@ -36,6 +36,7 @@ complete -c codeprompt -n "__fish_codeprompt_needs_command" -s t -l template -d 
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l issue -d 'Fetch a specific Github issue for the repository' -r
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l list-profiles -d 'List the profiles defined in the project-local `codeprompt.toml` and exit'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l force -d 'Skip the confirmation prompt when overwriting (--write-profile) or deleting (--delete_profile) a profile'
+complete -c codeprompt -n "__fish_codeprompt_needs_command" -l global -d 'Operate on global profiles instead of project-local ones'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l exclude-priority -d 'Change pattern priority in case of conflict to prioritize the exclusion pattern'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l exclude-from-tree -d 'Eclude files/folders from the source tree based on exclude patterns'
 complete -c codeprompt -n "__fish_codeprompt_needs_command" -l literal-brackets -d 'Treat `[` and `]` in include/exclude patterns as literal characters rather than glob character classes. Useful for SvelteKit/Next.js dynamic route directories like `[param]`'
