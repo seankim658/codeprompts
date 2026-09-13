@@ -11,6 +11,9 @@ pub struct OptionsPanel {
     interaction_state: ListState,
     /// State of the currently selected options
     options: OptionState,
+    /// Whether the constructed command should save the current selection
+    /// as a profile (`--write-profile`)
+    write_profile: bool,
 }
 
 impl OptionsPanel {
@@ -22,14 +25,20 @@ impl OptionsPanel {
         Self {
             interaction_state,
             options: config.tui.defaults.clone(),
+            write_profile: false,
         }
     }
 
     fn toggle_selected(&mut self) {
-        if let Some(i) = self.interaction_state.selected() {
+        let Some(i) = self.interaction_state.selected() else {
+            return;
+        };
+        if i < self.options.num() {
             if let Some((_, value)) = self.options.options_iter_mut().get_mut(i) {
-                **value = !**value
+                **value = !**value;
             }
+        } else {
+            self.write_profile = !self.write_profile;
         }
     }
 
@@ -51,10 +60,7 @@ impl Panel for OptionsPanel {
     }
 
     fn move_down(&mut self, count: usize) {
-        let len = self.options.num();
-        if len == 0 {
-            return;
-        }
+        let len = self.options.num() + 1;
         let current = self.interaction_state.selected().unwrap_or(0);
         self.interaction_state
             .select(Some((current + count).min(len - 1)));
@@ -71,10 +77,8 @@ impl Panel for OptionsPanel {
     }
 
     fn jump_to_bottom(&mut self) {
-        let len = self.options.num();
-        if len > 0 {
-            self.interaction_state.select(Some(len - 1));
-        }
+        let len = self.options.num() + 1;
+        self.interaction_state.select(Some(len - 1));
     }
 
     fn draw(&mut self, frame: &mut ratatui::Frame, area: Rect, is_active: bool, mode: GutterMode) {
@@ -88,7 +92,7 @@ impl Panel for OptionsPanel {
         let inner = block.inner(area);
         frame.render_widget(block, area);
 
-        let items: Vec<ListItem> = self
+        let mut items: Vec<ListItem> = self
             .options
             .options_iter_mut()
             .into_iter()
@@ -96,6 +100,11 @@ impl Panel for OptionsPanel {
                 ListItem::new(format!("[{}] {}", if *value { "x" } else { " " }, name))
             })
             .collect();
+        items.push(ListItem::new(format!(
+            "[{}] {}",
+            if self.write_profile { "x" } else { " " },
+            "Write Profile"
+        )));
         let total = items.len();
 
         let list = List::new(items).highlight_style(theme::selection(is_active));
@@ -162,6 +171,9 @@ impl Panel for OptionsPanel {
         }
         if self.options.no_spinner {
             args.push("--no-spinner".to_owned());
+        }
+        if self.write_profile {
+            args.push("--write-profile".to_owned());
         }
 
         args
