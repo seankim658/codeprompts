@@ -56,6 +56,10 @@ codeprompt --write-profile git-diff --diff-staged -t <path/to/git_commit.hbs>
 
 Project profiles are written to the existing `.codeprompt.toml` found while walking up to the git root, or to a new `.codeprompt.toml` at the repo root. Global profiles are written to `~/.codeprompt.toml`.
 
+### Paths in Profiles
+
+Paths inside your home directory are saved as `~/...` (for example `template = "~/.config/codeprompt/templates/git_commit.hbs"`), so a config file copied to another machine still works there. A leading `~` in `--template` or `--output` is expanded when the profile is used. Paths outside your home directory and relative paths are saved as given.
+
 ### Using a Profile
 
 Apply a saved profile to a run with `--profile <name>`:

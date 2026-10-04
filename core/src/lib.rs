@@ -5,6 +5,7 @@
 //! `[global]` section independently, so the file tree the TUI previews matches
 //! what the CLI actually walks — with no argument pass-through between them.
 
+pub mod paths;
 pub mod profiles;
 
 use anyhow::{Context, Result};

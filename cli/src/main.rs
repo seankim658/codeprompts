@@ -13,6 +13,7 @@ use codeprompt::logging;
 use codeprompt::output::{copy_to_clipboard, write_output_file};
 use codeprompt::prelude::*;
 use codeprompt::validation::{validate_clipboard_copy, validate_token_count, ValidationConfig};
+use codeprompt_core::paths::{expand_home, expand_home_str};
 use codeprompt_core::profiles::Scope;
 
 /// Create standardized LLM prompts from your code.
@@ -159,6 +160,12 @@ fn print_completions<G: Generator>(gen: G, cmd: &mut Command) {
     generate(gen, cmd, cmd.get_name().to_owned(), &mut std::io::stdout());
 }
 
+/// Expand a leading `~` in path arguments the shell left unexpanded.
+fn expand_home_paths(args: &mut Args) {
+    args.template = args.template.as_deref().map(expand_home);
+    args.output = args.output.as_deref().map(expand_home_str);
+}
+
 /// Main entry point for the codeprompt application.
 ///
 /// ### Returns
@@ -234,6 +241,8 @@ async fn main() -> Result<(), Error> {
             profile_commands::resolve_profile(&profile_name, scope, &project_root, &args, &matches);
         profile_commands::apply_profile(&mut args, &resolved);
     }
+
+    expand_home_paths(&mut args);
 
     let validation_config = ValidationConfig::new(
         args.diff_staged,

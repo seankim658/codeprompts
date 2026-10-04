@@ -2,10 +2,11 @@ use crate::gutter::{self, GutterMode};
 use crate::prelude::{Config, Panel};
 use crate::theme;
 use anyhow::Result;
+use codeprompt_core::paths::expand_home;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::widgets::{Block, Borders, List, ListItem, ListState};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub struct TemplatesPanel {
     /// State for UI interaction
@@ -22,18 +23,7 @@ impl TemplatesPanel {
 
         // If template directory is configured, scan for .hbs file
         if let Some(template_dir) = &config.tui.template_dir {
-            // Expand `~` if present
-            let expanded_path = if template_dir.starts_with("~/") {
-                dirs::home_dir()
-                    .map(|mut home| {
-                        let remainder = template_dir.strip_prefix("~/").unwrap();
-                        home.push(remainder);
-                        home
-                    })
-                    .unwrap_or_else(|| template_dir.into())
-            } else {
-                template_dir.into()
-            };
+            let expanded_path = expand_home(Path::new(template_dir));
 
             if expanded_path.exists() {
                 for entry in std::fs::read_dir(expanded_path)? {

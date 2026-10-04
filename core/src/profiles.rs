@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
+use crate::paths::{contract_home, contract_home_str};
+
 const PROJECT_CONFIG_FILE: &str = ".codeprompt.toml";
 
 /// Which config file a profile lives in.
@@ -93,7 +95,8 @@ pub fn save_profile(path: &Path, name: &str, profile: &Profile) -> Result<()> {
         .as_table_mut()
         .context("`profiles` in the config file is not a table")?;
 
-    profiles.insert(name, toml_edit::Item::Table(profile_to_table(profile)?));
+    let portable = profile.with_portable_paths();
+    profiles.insert(name, toml_edit::Item::Table(profile_to_table(&portable)?));
 
     std::fs::write(path, doc.to_string())
         .with_context(|| format!("Failed to write config files: {}", path.display()))?;
@@ -386,6 +389,16 @@ pub struct Profile {
     pub output: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub template: Option<PathBuf>,
+}
+
+impl Profile {
+    pub fn with_portable_paths(&self) -> Profile {
+        Profile {
+            template: self.template.as_deref().map(contract_home),
+            output: self.output.as_deref().map(contract_home_str),
+            ..self.clone()
+        }
+    }
 }
 
 #[derive(Debug, Default, Deserialize)]
